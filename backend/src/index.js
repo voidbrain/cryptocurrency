@@ -37,15 +37,16 @@ app.get('/blockchain', (req, res) => {
 
 // Endpoint to add a new block
 app.post('/mine', (req, res) => {
-  const { transaction } = req.body;
-  blockchain.addBlock(transaction);
-
-  // Broadcast the new block to peers
-  peers.forEach(peer => {
-    axios.post(`${peer}/receive-block`, { block: blockchain.getLatestBlock() });
-  });
-
-  res.send(blockchain.getLatestBlock());
+  const { block } = req.body;
+  const newBlock = new Block(block.previousHash, block.transaction, block.timestamp);
+  newBlock.hash = block.hash;
+  console.log(blockchain.isChainValid([...blockchain.chain, newBlock]));
+  if (blockchain.isChainValid([...blockchain.chain, newBlock])) {
+    blockchain.addBlock(block.transaction);
+    res.send({ added: true });
+  } else {
+    res.send({ added: false });
+  }
 });
 
 // Endpoint to receive new blocks from other nodes

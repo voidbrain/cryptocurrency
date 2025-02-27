@@ -66,7 +66,7 @@ class Block {
 
 const getPeers = async () => {
   try {
-    const response = await axios.get('http://central-registry:4000/peers');
+    const response = await axios.get('http://localhost:4000/peers');
     return response.data.peers;
   } catch (error) {
     console.error('Failed to get peers from central registry:', error);
@@ -76,7 +76,7 @@ const getPeers = async () => {
 
 const getBlockchainParams = async () => {
   try {
-    const response = await axios.get('http://backend:3000/blockchain-params');
+    const response = await axios.get('http://localhost:3000/blockchain-params');
     return response.data;
   } catch (error) {
     console.error('Failed to get blockchain parameters:', error);
@@ -86,7 +86,7 @@ const getBlockchainParams = async () => {
 
 const notifyMiningTime = async (miningTime) => {
   try {
-    await axios.post('http://backend:3000/api/history/mining-time', { miningTime });
+    await axios.post('http://localhost:3000/api/history/mining-time', { miningTime });
     console.log('Mining time notified to backend');
   } catch (error) {
     console.error('Failed to notify mining time to backend:', error);

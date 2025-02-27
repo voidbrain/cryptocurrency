@@ -1,6 +1,5 @@
-const crypto = require('crypto');
 const Block = require('./block');
-const Transaction = require('./transaction');
+const db = require('../db');
 
 class Blockchain {
   constructor() {
@@ -23,11 +22,27 @@ class Blockchain {
     const previousBlock = this.getLatestBlock();
     const newBlock = new Block(previousBlock.hash, transaction);
     newBlock.mineBlock(this.difficulty);
-
+    console.log("addBlock")
     // Ensure the total supply does not exceed the maximum supply
     if (this.currentSupply + this.miningReward <= this.maxSupply) {
       this.chain.push(newBlock);
       this.currentSupply += this.miningReward;
+
+      // Update the wallet balance for the receiver of the coinbase transaction
+      const receiverPublicKey = transaction.receiverPublicKey;
+      console.log( `UPDATE wallets SET balance = balance + ? WHERE publicKey = ?`,
+      )
+      db.run(
+        `UPDATE wallets SET balance = balance + ? WHERE publicKey = ?`,
+        [this.miningReward, receiverPublicKey],
+        (err) => {
+          if (err) {
+            console.error('Failed to update wallet balance:', err);
+          } else {
+            console.log(`Reward added to wallet: ${receiverPublicKey}`);
+          }
+        }
+      );
     } else {
       console.log('Maximum supply reached. No more coins can be mined.');
     }

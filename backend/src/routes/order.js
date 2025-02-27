@@ -1,8 +1,79 @@
 const express = require('express');
-const db = require('../db');
-const Order = require('../models/order');
-
 const router = express.Router();
+const Blockchain = require('../models/blockchain');
+const db = require('../db');
+
+const blockchain = new Blockchain();
+
+// Function to calculate the market price
+const calculateMarketPrice = async (totalBuyAmount, totalSellAmount) => {
+  const blockchainParams = blockchain.getBlockchainParams();
+
+  // Base market price calculation
+  let marketPrice = totalBuyAmount / totalSellAmount;
+
+  // Include mining and block production multiplicator
+  const miningMultiplicator = blockchainParams.currentSupply / blockchainParams.maxSupply;
+  marketPrice *= miningMultiplicator;
+
+  return marketPrice;
+};
+
+// Function to update the market price in the database
+const updateMarketPrice = async () => {
+  db.all('SELECT * FROM orders', async (err, rows) => {
+    if (err) {
+      console.error('Error retrieving orders:', err);
+      return;
+    }
+
+    const buyOrders = rows.filter(order => order.type === 'buy');
+    const sellOrders = rows.filter(order => order.type === 'sell');
+
+    const totalBuyAmount = buyOrders.reduce((sum, order) => sum + order.amount, 0);
+    const totalSellAmount = sellOrders.reduce((sum, order) => sum + order.amount, 0);
+
+    try {
+      const marketPrice = await calculateMarketPrice(totalBuyAmount, totalSellAmount);
+      db.run('UPDATE market SET price = ? WHERE id = 1', [marketPrice], (err) => {
+        if (err) {
+          console.error('Failed to update market price:', err);
+        } else {
+          console.log('Market price updated:', marketPrice);
+        }
+      });
+    } catch (error) {
+      console.error('Failed to calculate market price:', error);
+    }
+  });
+};
+
+// Endpoint to get the current market price of NodeCoin
+router.get('/market-price', (req, res) => {
+  db.get('SELECT price FROM market WHERE id = 1', (err, row) => {
+    if (err) {
+      console.error('Failed to fetch market price:', err);
+      res.status(500).send('Failed to fetch market price');
+    } else {
+      res.json({ marketPrice: row.price });
+    }
+  });
+});
+
+// Example endpoint to create an order
+router.post('/create-order', (req, res) => {
+  const { type, amount, price } = req.body;
+  db.run('INSERT INTO orders (type, amount, price) VALUES (?, ?, ?)', [type, amount, price], (err) => {
+    if (err) {
+      console.error('Failed to create order:', err);
+      res.status(500).send('Failed to create order');
+    } else {
+      // Update the market price after creating a new order
+      updateMarketPrice();
+      res.json({ success: true, message: 'Order created successfully' });
+    }
+  });
+});
 
 router.post('/buy', (req, res) => {
   const { username, amount, price } = req.body;
@@ -112,15 +183,14 @@ router.get('/price', (req, res) => {
       const totalBuyAmount = buyOrders.reduce((sum, order) => sum + order.amount, 0);
       const totalSellAmount = sellOrders.reduce((sum, order) => sum + order.amount, 0);
 
-      const marketPrice = calculateMarketPrice(totalBuyAmount, totalSellAmount);
-      res.json({ marketPrice });
+      calculateMarketPrice(totalBuyAmount, totalSellAmount)
+        .then(marketPrice => res.json({ marketPrice }))
+        .catch(error => {
+          console.error('Failed to calculate market price:', error);
+          res.status(500).send('Failed to calculate market price');
+        });
     }
   });
 });
-
-const calculateMarketPrice = (totalBuyAmount, totalSellAmount) => {
-  if (totalSellAmount === 0) return 1; // Avoid division by zero
-  return totalBuyAmount / totalSellAmount;
-};
 
 module.exports = router;

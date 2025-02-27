@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const db = require('../db');
 
 // Mock data for demonstration purposes
 const historyData = {
