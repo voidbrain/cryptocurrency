@@ -2,21 +2,35 @@
 node_modules/
 **/node_modules/
 npm-debug.log
+**/npm-debug.log
 yarn-error.log
+**/yarn-error.log
 .env
+**/.env
 .package-lock.json
+**/.package-lock.json
 yarn.lock
+**/yarn.lock
 dist/
+**/dist/
 dist/*
+**/dist/*
 !dist/.gitkeep
+**/!dist/.gitkeep
 dist/**/*
+**/dist/**/*
 !dist/**/.gitkeep
+**/!dist/**/.gitkeep
 build/
+**/build/
 build/*
+**/build/*
 !build/.gitkeep
+**/!build/.gitkeep
 build/**/*
+**/build/**/*
 !build/**/.gitkeep
-
+**/!build/**/.gitkeep
 
 # Logs
 logs
