@@ -7,10 +7,22 @@ const orderRoutes = require('./routes/order');
 const app = express();
 app.use(express.json());
 
-app.use('/chain', chainRoutes);
-app.use('/transaction', transactionRoutes);
-app.use('/wallet', walletRoutes);
-app.use('/order', orderRoutes);
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}`);
+  next();
+});
+
+app.use('/api/chain', chainRoutes);
+app.use('/api/transaction', transactionRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/order', orderRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

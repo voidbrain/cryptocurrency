@@ -1,6 +1,19 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import LineChart from '@/components/LineChart.vue';
+import {
+  Chart as ChartJS,
+  Title,
+  Tooltip,
+  Legend,
+  LineElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+} from 'chart.js';
+
+ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
 
 const fromUser = ref('');
 const toUser = ref('');
@@ -8,6 +21,18 @@ const value = ref('');
 const amount = ref(0);
 const balance = ref(0);
 const publicKey = ref('');
+const privateKey = ref('');
+const marketPrice = ref(0);
+const chartData = ref({
+  labels: [],
+  datasets: [
+    {
+      label: 'NodeCoin Price',
+      backgroundColor: '#f87979',
+      data: [],
+    },
+  ],
+});
 
 const createWallet = async () => {
   try {
@@ -25,20 +50,24 @@ const createWallet = async () => {
       keyPair.publicKey
     );
 
-    const privateKey = await window.crypto.subtle.exportKey(
+    const privateKeyValue = await window.crypto.subtle.exportKey(
       "pkcs8",
       keyPair.privateKey
     );
 
-    publicKey.value = btoa(String.fromCharCode(...new Uint8Array(exportedPublicKey)));
+    const privateKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(privateKeyValue)));
+    privateKey.value = privateKeyBase64;
 
-    const response = await axios.post('/api/create-wallet', {
+    const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(exportedPublicKey)));
+    publicKey.value = publicKeyBase64;
+
+    const response = await axios.post('/api/wallet/create', {
       username: fromUser.value,
       publicKey: publicKey.value,
     });
 
     // Store the private key securely on the client side
-    localStorage.setItem('privateKey', btoa(String.fromCharCode(...new Uint8Array(privateKey))));
+    localStorage.setItem('privateKey', privateKey.value);
 
     console.log('Wallet created:', response.data);
   } catch (error) {
@@ -48,7 +77,7 @@ const createWallet = async () => {
 
 const addFunds = async () => {
   try {
-    const response = await axios.post('/api/add-funds', {
+    const response = await axios.post('/api/wallet/add-funds', {
       username: fromUser.value,
       amount: amount.value,
     });
@@ -98,10 +127,22 @@ const sendTransaction = async () => {
     console.error('Error sending transaction:', error);
   }
 };
+
+onMounted(async () => {
+  try {
+    const response = await axios.get('/api/market/price');
+    marketPrice.value = response.data.price;
+  } catch (error) {
+    console.error('Error fetching market price:', error);
+  }
+});
 </script>
 
 <template>
-  <main>
+  <div>
+    <h1>NodeCoin Dashboard</h1>
+    <p>Current Market Price: €{{ marketPrice.toFixed(2) }}</p>
+    <LineChart :chartData="chartData" />
     <div>
       <label for="fromUser">From:</label>
       <input id="fromUser" v-model="fromUser" type="text" />
@@ -123,7 +164,6 @@ const sendTransaction = async () => {
       <button @click="addFunds">Add Funds</button>
       <button @click="sendTransaction">Send Transaction</button>
       <button @click="getBalance">Check Balance</button>
-      <button @click="getChainInstance">Get Chain Instance</button>
     </div>
     <div>
       <p>Balance: {{ balance }}</p>
@@ -131,5 +171,18 @@ const sendTransaction = async () => {
     <div>
       <p>Public Key: {{ publicKey }}</p>
     </div>
-  </main>
+    <div>
+      <p>Private Key: {{ privateKey }}</p>
+    </div>
+  </div>
 </template>
+
+<style scoped>
+h1 {
+  text-align: center;
+}
+
+div {
+  height: 400px;
+}
+</style>

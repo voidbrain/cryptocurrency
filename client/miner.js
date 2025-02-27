@@ -8,7 +8,6 @@ class Transaction {
     this.receiverPublicKey = receiverPublicKey;
   }
 
-
   toString() {
     return JSON.stringify(this);
   }
@@ -47,8 +46,9 @@ class Block {
 }
 
 class Miner {
-  constructor(minerAddress, difficulty = 4) {
+  constructor(minerAddress, privateKey, difficulty = 4) {
     this.minerAddress = minerAddress;
+    this.privateKey = privateKey;
     this.difficulty = difficulty;
   }
 
@@ -61,10 +61,12 @@ class Miner {
       console.log('Mining new block...');
       newBlock.mineBlock(this.difficulty);
 
+      const signature = await this.signTransaction(transaction);
+
       await axios.post('http://localhost:3000/transaction', {
-        amount: 100,
-        senderPublicKey: 'network',
-        receiverPublicKey: this.minerAddress,
+        transaction,
+        signature: btoa(String.fromCharCode(...new Uint8Array(signature))),
+        publicKey: this.minerAddress,
       });
 
       console.log('New block mined:', newBlock.toString());
@@ -99,8 +101,35 @@ class Miner {
       return new Block('', new Transaction(0, 'genesis', 'genesis'));
     }
   }
+
+  async signTransaction(transaction) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify(transaction));
+
+    const privateKey = await crypto.subtle.importKey(
+      'pkcs8',
+      Uint8Array.from(atob(this.privateKey), c => c.charCodeAt(0)),
+      {
+        name: 'ECDSA',
+        namedCurve: 'P-256',
+      },
+      false,
+      ['sign']
+    );
+
+    const signature = await crypto.subtle.sign(
+      {
+        name: 'ECDSA',
+        hash: { name: 'SHA-256' },
+      },
+      privateKey,
+      data
+    );
+
+    return signature;
+  }
 }
 
-// Replace 'miner-public-key' with the actual public key of the miner
-const miner = new Miner('miner-public-key');
+// Replace 'miner-public-key' and 'miner-private-key' with the actual public and private keys of the miner
+const miner = new Miner('miner-public-key', 'miner-private-key');
 miner.mine().catch(console.error);
