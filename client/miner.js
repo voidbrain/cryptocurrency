@@ -8,24 +8,37 @@ class Transaction {
     this.receiverPublicKey = receiverPublicKey;
   }
 
+
   toString() {
     return JSON.stringify(this);
   }
 }
 
 class Block {
-  constructor(previousHash, transaction, timestamp = Date.now()) {
+  constructor(previousHash, transaction, timestamp = Date.now(), nonce = 0) {
     this.previousHash = previousHash;
     this.transaction = transaction;
     this.timestamp = timestamp;
+    this.nonce = nonce;
     this.hash = this.calculateHash();
   }
 
   calculateHash() {
     return crypto
       .createHash('sha256')
-      .update(this.previousHash + this.timestamp + this.transaction.toString())
+      .update(this.previousHash + this.timestamp + this.transaction.toString() + this.nonce)
       .digest('hex');
+  }
+
+  mineBlock(difficulty) {
+    while (!this.hash.startsWith('0'.repeat(difficulty))) {
+      this.nonce++;
+      this.hash = this.calculateHash();
+    }
+  }
+
+  getHash() {
+    return this.hash;
   }
 
   toString() {
@@ -34,8 +47,9 @@ class Block {
 }
 
 class Miner {
-  constructor(minerAddress) {
+  constructor(minerAddress, difficulty = 4) {
     this.minerAddress = minerAddress;
+    this.difficulty = difficulty;
   }
 
   async mine() {
@@ -43,6 +57,9 @@ class Miner {
       const transaction = new Transaction(100, 'network', this.minerAddress);
       const previousBlock = await this.getLatestBlock();
       const newBlock = new Block(previousBlock.hash, transaction);
+
+      console.log('Mining new block...');
+      newBlock.mineBlock(this.difficulty);
 
       await axios.post('http://localhost:3000/transaction', {
         amount: 100,
@@ -84,5 +101,6 @@ class Miner {
   }
 }
 
+// Replace 'miner-public-key' with the actual public key of the miner
 const miner = new Miner('miner-public-key');
 miner.mine().catch(console.error);

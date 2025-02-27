@@ -23,6 +23,15 @@ db.serialize(() => {
       hash TEXT
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT,
+      amount INTEGER,
+      price REAL
+    )
+  `);
 });
 
 module.exports = db;
