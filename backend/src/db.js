@@ -18,8 +18,9 @@ db.serialize(() => {
     CREATE TABLE IF NOT EXISTS chain (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       previousHash TEXT,
-      transaction_data TEXT,
-      timestamp INTEGER,
+      transaction TEXT,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      nonce INTEGER,
       hash TEXT
     )
   `);
@@ -30,6 +31,14 @@ db.serialize(() => {
       type TEXT,
       amount INTEGER,
       price REAL
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS mining_times (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      miningTime REAL NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
 });

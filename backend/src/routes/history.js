@@ -9,6 +9,20 @@ const historyData = {
   availableTokens: [300, 400, 500, 600, 700, 800, 900]
 };
 
+let totalTokens = 0;
+let miningTimes = [];
+
+router.post('/mining-time', (req, res) => {
+  const { miningTime } = req.body;
+  miningTimes.push(miningTime);
+  console.log(`Received mining time: ${miningTime} seconds`);
+  res.sendStatus(200);
+});
+
+router.get('/mining-times', (req, res) => {
+  res.json(miningTimes);
+});
+
 router.get('/nodeCoinCap', (req, res) => {
   res.json({
     labels: historyData.labels,
