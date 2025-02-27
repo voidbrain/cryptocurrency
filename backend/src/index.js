@@ -9,6 +9,7 @@ const transactionRoutes = require('./routes/transaction');
 const walletRoutes = require('./routes/wallet');
 const orderRoutes = require('./routes/order');
 const historyRoutes = require('./routes/history'); // Import the new routes
+const db = require('./db'); // Ensure the database is initialized
 
 const app = express();
 app.use(cors()); // Enable CORS
@@ -68,6 +69,27 @@ app.post('/register-peer', (req, res) => {
     peers.push(peer);
   }
   res.send({ peers });
+});
+
+// Endpoint to check if a wallet exists
+app.get('/wallet-exists/:publicKey', (req, res) => {
+  const { publicKey } = req.params;
+  const query = `SELECT * FROM wallets WHERE publicKey = ?`;
+  db.get(query, [publicKey], (err, row) => {
+    if (err) {
+      console.error('Failed to check wallet existence:', err);
+      res.status(500).send('Server error');
+    } else if (row) {
+      res.send({ exists: true });
+    } else {
+      res.send({ exists: false });
+    }
+  });
+});
+
+// Endpoint to get blockchain parameters
+app.get('/blockchain-params', (req, res) => {
+  res.send(blockchain.getBlockchainParams());
 });
 
 // Error handling middleware

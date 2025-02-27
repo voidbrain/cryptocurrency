@@ -5,10 +5,14 @@ const Transaction = require('./transaction');
 class Blockchain {
   constructor() {
     this.chain = [this.createGenesisBlock()];
+    this.difficulty = 4;
+    this.miningReward = 50;
+    this.maxSupply = 21000000; // Maximum supply of NodeCoin
+    this.currentSupply = 0; // Current supply of NodeCoin
   }
 
   createGenesisBlock() {
-    return new Block('', new Transaction(100, 'genesis', 'genesis'));
+    return new Block('0', 'Genesis Block', Date.now());
   }
 
   getLatestBlock() {
@@ -16,21 +20,17 @@ class Blockchain {
   }
 
   addBlock(transaction) {
-    const newBlock = new Block(this.getLatestBlock().getHash(), transaction);
-    this.chain.push(newBlock);
-  }
+    const previousBlock = this.getLatestBlock();
+    const newBlock = new Block(previousBlock.hash, transaction);
+    newBlock.mineBlock(this.difficulty);
 
-  getPreviousBlockHash() {
-    if (!this.chain || this.chain.length === 0) {
-      throw new Error('Chain is empty');
+    // Ensure the total supply does not exceed the maximum supply
+    if (this.currentSupply + this.miningReward <= this.maxSupply) {
+      this.chain.push(newBlock);
+      this.currentSupply += this.miningReward;
+    } else {
+      console.log('Maximum supply reached. No more coins can be mined.');
     }
-
-    const lastBlock = this.chain[this.chain.length - 1];
-    if (!(lastBlock instanceof Block)) {
-      throw new Error('Last block is not an instance of Block');
-    }
-
-    return lastBlock.getHash();
   }
 
   isChainValid(chain) {
@@ -38,23 +38,24 @@ class Blockchain {
       const currentBlock = chain[i];
       const previousBlock = chain[i - 1];
 
-      if (currentBlock.getHash() !== currentBlock.calculateHash()) {
+      if (currentBlock.hash !== currentBlock.calculateHash()) {
         return false;
       }
 
-      if (currentBlock.previousHash !== previousBlock.getHash()) {
+      if (currentBlock.previousHash !== previousBlock.hash) {
         return false;
       }
     }
     return true;
   }
 
-  replaceChain(newChain) {
-    if (newChain.length > this.chain.length && this.isChainValid(newChain)) {
-      this.chain = newChain;
-      return true;
-    }
-    return false;
+  getBlockchainParams() {
+    return {
+      difficulty: this.difficulty,
+      miningReward: this.miningReward,
+      maxSupply: this.maxSupply,
+      currentSupply: this.currentSupply,
+    };
   }
 }
 
