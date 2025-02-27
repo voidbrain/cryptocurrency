@@ -2,14 +2,14 @@
   <div>
     <h1>NodeCoin Dashboard</h1>
     <p>Current Market Price: {{ marketPrice }}</p>
-    <LineChart :chartData="chartData" />
+    <LineChart :chartData="chartData" :chartOptions="chartOptions" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
-import LineChart from '@/components/LineChart.vue';
+import { useChartData } from '../../../dashboard/src/composables/useChartData';
 import {
   Chart as ChartJS,
   Title,
@@ -21,19 +21,10 @@ import {
   PointElement,
 } from 'chart.js';
 
+const { chartData, chartOptions } = useChartData();
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
 
 const marketPrice = ref(0);
-const chartData = ref<ChartData>({
-  labels: [],
-  datasets: [
-    {
-      label: 'NodeCoin Price',
-      backgroundColor: '#f87979',
-      data: [],
-    },
-  ],
-});
 
 const fetchMarketPrice = async () => {
   try {
@@ -55,6 +46,7 @@ interface ChartData {
 }
 
 const updateChartData = (price: number): void => {
+  console.log("updateChartData")
   const now: string = new Date().toLocaleTimeString();
   chartData.value.labels.push(now);
   chartData.value.datasets[0].data.push(price);

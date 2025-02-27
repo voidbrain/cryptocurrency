@@ -1,19 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import axios from 'axios';
-import LineChart from '@/components/LineChart.vue';
-import {
-  Chart as ChartJS,
-  Title,
-  Tooltip,
-  Legend,
-  LineElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-} from 'chart.js';
-
-ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement);
 
 const fromUser = ref('');
 const toUser = ref('');
@@ -23,31 +10,18 @@ const balance = ref(0);
 const publicKey = ref('');
 const privateKey = ref('');
 const marketPrice = ref(0);
-const chartData = ref({
-  labels: [],
-  datasets: [
-    {
-      label: 'NodeCoin Price',
-      backgroundColor: '#f87979',
-      data: [],
-    },
-  ],
-});
 
 const createWallet = async () => {
   try {
     const keyPair = await window.crypto.subtle.generateKey(
       {
-        name: "ECDSA",
-        namedCurve: "P-256",
+        name: 'RSA-PSS',
+        modulusLength: 2048,
+        publicExponent: new Uint8Array([1, 0, 1]),
+        hash: 'SHA-256',
       },
       true,
-      ["sign", "verify"]
-    );
-
-    const exportedPublicKey = await window.crypto.subtle.exportKey(
-      "spki",
-      keyPair.publicKey
+      ['sign', 'verify']
     );
 
     const privateKeyValue = await window.crypto.subtle.exportKey(
@@ -57,6 +31,11 @@ const createWallet = async () => {
 
     const privateKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(privateKeyValue)));
     privateKey.value = privateKeyBase64;
+
+    const exportedPublicKey = await window.crypto.subtle.exportKey(
+      "spki",
+      keyPair.publicKey
+    );
 
     const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(exportedPublicKey)));
     publicKey.value = publicKeyBase64;
@@ -117,7 +96,7 @@ const getChainInstance = async () => {
 
 const sendTransaction = async () => {
   try {
-    const response = await axios.post('/api/send', {
+    const response = await axios.post('/api/transaction/send', {
       from: fromUser.value,
       to: toUser.value,
       value: value.value,
@@ -130,8 +109,8 @@ const sendTransaction = async () => {
 
 onMounted(async () => {
   try {
-    const response = await axios.get('/api/market/price');
-    marketPrice.value = response.data.price;
+    const response = await axios.get('/api/order/price');
+    marketPrice.value = response.data.marketPrice;
   } catch (error) {
     console.error('Error fetching market price:', error);
   }
@@ -141,8 +120,8 @@ onMounted(async () => {
 <template>
   <div>
     <h1>NodeCoin Dashboard</h1>
-    <p>Current Market Price: €{{ marketPrice.toFixed(2) }}</p>
-    <LineChart :chartData="chartData" />
+    <p>Current Market Price: €{{ marketPrice?.toFixed(2) }}</p>
+
     <div>
       <label for="fromUser">From:</label>
       <input id="fromUser" v-model="fromUser" type="text" />
@@ -182,7 +161,4 @@ h1 {
   text-align: center;
 }
 
-div {
-  height: 400px;
-}
 </style>

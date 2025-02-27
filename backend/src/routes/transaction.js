@@ -1,90 +1,11 @@
 const express = require('express');
-const db = require('../db');
-const Chain = require('../models/chain');
-const Transaction = require('../models/transaction');
-const crypto = require('crypto');
-
 const router = express.Router();
+const db = require('../db'); // Assuming you have a database module
+const Chain = require('../models/blockchain'); // Assuming you have a blockchain module
+const Transaction = require('../models/transaction'); // Assuming you have a transaction module
+const crypto = require('crypto').webcrypto;
 
-router.post('/', async (req, res) => {
-  const { transaction, signature, publicKey } = req.body;
-
-  // Verify the signature
-  const isValidSignature = await verifySignature(transaction, signature, publicKey);
-  if (!isValidSignature) {
-    return res.status(400).send('Invalid signature');
-  }
-
-  const { amount, senderPublicKey, receiverPublicKey } = transaction;
-
-  // Check if sender and receiver wallets exist and have sufficient balance
-  db.get('SELECT * FROM wallets WHERE publicKey = ?', [senderPublicKey], (err, senderRow) => {
-    if (err) {
-      console.error('Error retrieving sender wallet:', err);
-      return res.status(500).send('Error retrieving sender wallet');
-    }
-    if (!senderRow) {
-      console.error('Sender wallet not found');
-      return res.status(404).send('Sender wallet not found');
-    }
-    if (senderRow.balance < amount) {
-      console.error('Insufficient balance in sender wallet');
-      return res.status(400).send('Insufficient balance in sender wallet');
-    }
-
-    db.get('SELECT * FROM wallets WHERE publicKey = ?', [receiverPublicKey], (err, receiverRow) => {
-      if (err) {
-        console.error('Error retrieving receiver wallet:', err);
-        return res.status(500).send('Error retrieving receiver wallet');
-      }
-      if (!receiverRow) {
-        console.error('Receiver wallet not found');
-        return res.status(404).send('Receiver wallet not found');
-      }
-
-      // Create and insert the transaction
-      const newTransaction = new Transaction(amount, senderPublicKey, receiverPublicKey);
-      Chain.instance.insertBlock(newTransaction);
-
-      const newBlock = Chain.instance.chain[Chain.instance.chain.length - 1];
-      db.run(
-        'INSERT INTO chain (previousHash, transaction_data, timestamp, hash) VALUES (?, ?, ?, ?)',
-        [newBlock.previousHash, newBlock.transaction.toString(), newBlock.timestamp, newBlock.hash],
-        (err) => {
-          if (err) {
-            console.error('Error adding transaction to chain:', err);
-            return res.status(500).send('Error adding transaction to chain');
-          }
-
-          // Update sender and receiver balances
-          const newSenderBalance = senderRow.balance - amount;
-          const newReceiverBalance = receiverRow.balance + amount;
-
-          db.run('UPDATE wallets SET balance = ? WHERE publicKey = ?', [newSenderBalance, senderPublicKey], (err) => {
-            if (err) {
-              console.error('Error updating sender wallet balance:', err);
-              return res.status(500).send('Error updating sender wallet balance');
-            }
-
-            db.run('UPDATE wallets SET balance = ? WHERE publicKey = ?', [newReceiverBalance, receiverPublicKey], (err) => {
-              if (err) {
-                console.error('Error updating receiver wallet balance:', err);
-                return res.status(500).send('Error updating receiver wallet balance');
-              }
-
-              res.send('Transaction added and balances updated');
-            });
-          });
-        }
-      );
-    });
-  });
-});
-
-const verifySignature = async (transaction, signature, publicKey) => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(JSON.stringify(transaction));
-
+const verifySignature = async (publicKey, signature, data) => {
   const key = await crypto.subtle.importKey(
     'spki',
     Uint8Array.from(atob(publicKey), c => c.charCodeAt(0)),
@@ -109,23 +30,91 @@ const verifySignature = async (transaction, signature, publicKey) => {
   return isValid;
 };
 
-router.post('/send', (req, res) => {
-  const { from, to, value } = req.body;
-  const transaction = new Transaction(value, from, to);
-  Chain.instance.insertBlock(transaction);
+router.post('/send', async (req, res) => {
+  const { from, to, value, signature, data } = req.body;
 
-  const newBlock = Chain.instance.chain[Chain.instance.chain.length - 1];
-  db.run(
-    'INSERT INTO chain (previousHash, transaction_data, timestamp, hash) VALUES (?, ?, ?, ?)',
-    [newBlock.previousHash, newBlock.transaction.toString(), newBlock.timestamp, newBlock.hash],
-    (err) => {
-      if (err) {
-        res.status(500).send('Error sending transaction');
-      } else {
-        res.send('Transaction sent');
-      }
+  try {
+    // Fetch the sender's public key from the database
+    const senderPublicKey = await new Promise((resolve, reject) => {
+      db.get('SELECT publicKey FROM users WHERE username = ?', [from], (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row ? row.publicKey : null);
+        }
+      });
+    });
+
+    if (!senderPublicKey) {
+      return res.status(400).send('Sender not found');
     }
-  );
+
+    // Verify the signature
+    const isValidSignature = await verifySignature(senderPublicKey, signature, data);
+    if (!isValidSignature) {
+      return res.status(400).send('Invalid signature');
+    }
+
+    // Check sender's token availability
+    const senderBalance = await new Promise((resolve, reject) => {
+      db.get('SELECT balance FROM users WHERE username = ?', [from], (err, row) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row ? row.balance : 0);
+        }
+      });
+    });
+
+    if (senderBalance < value) {
+      return res.status(400).send('Insufficient balance');
+    }
+
+    // Create and insert the transaction
+    const transaction = new Transaction(value, from, to);
+    Chain.instance.insertBlock(transaction);
+
+    const newBlock = Chain.instance.chain[Chain.instance.chain.length - 1];
+    await new Promise((resolve, reject) => {
+      db.run(
+        'INSERT INTO chain (previousHash, transaction_data, timestamp, hash) VALUES (?, ?, ?, ?)',
+        [newBlock.previousHash, newBlock.transaction.toString(), newBlock.timestamp, newBlock.hash],
+        (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        }
+      );
+    });
+
+    // Update sender's and receiver's token availability
+    await new Promise((resolve, reject) => {
+      db.run('UPDATE users SET balance = balance - ? WHERE username = ?', [value, from], (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+
+    await new Promise((resolve, reject) => {
+      db.run('UPDATE users SET balance = balance + ? WHERE username = ?', [value, to], (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+
+    res.send('Transaction sent');
+  } catch (err) {
+    console.error('Error sending transaction:', err);
+    res.status(500).send('Error sending transaction');
+  }
 });
 
 module.exports = router;

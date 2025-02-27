@@ -10,6 +10,8 @@ services:
       - ./frontend/public:/app/public
     environment:
       - NODE_ENV=development
+    depends_on:
+      - central-registry
 
   backend:
     build:
@@ -23,12 +25,41 @@ services:
       - NODE_ENV=development
       - PORT=3000
 
+  central-registry:
+    build:
+      context: ./backend
+      dockerfile: central-registry/Dockerfile
+    ports:
+      - "4000:4000"
+
+  blockchain-server-1:
+    build:
+      context: ./backend
+      dockerfile: blockchain-server/Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - central-registry
+    environment:
+      - PORT=3000
+
+  blockchain-server-2:
+    build:
+      context: ./backend
+      dockerfile: blockchain-server/Dockerfile
+    ports:
+      - "3001:3001"
+    depends_on:
+      - central-registry
+    environment:
+      - PORT=3001
+
   miner:
     build:
       context: ./client
       dockerfile: Dockerfile
     depends_on:
-      - backend
+      - central-registry
 
   dashboard:
     build:
@@ -36,6 +67,10 @@ services:
       dockerfile: Dockerfile
     ports:
       - '5000:5000'
+    depends_on:
+      - central-registry
+    environment:
+      - NODE_ENV=development
 
 networks:
   default:

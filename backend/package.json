@@ -4,16 +4,21 @@
   "description": "A simple Node.js application implementing blockchain functionality.",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "test": "mocha --timeout 10000"
   },
   "dependencies": {
     "axios": "^1.8.1",
+    "cors": "^2.8.5",
     "express": "^4.21.2",
     "sqlite3": "^5.1.7"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/axios": "^0.9.36"
+    "@types/axios": "^0.9.36",
+    "chai": "^5.2.0",
+    "chai-http": "^4.3.0",
+    "mocha": "^11.1.0"
   }
 }

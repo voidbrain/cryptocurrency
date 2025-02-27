@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../db');
-const Chain = require('../models/chain');
+const Chain = require('../models/blockchain');
 
 const router = express.Router();
 

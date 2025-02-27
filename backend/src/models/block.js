@@ -11,7 +11,7 @@ class Block {
   calculateHash() {
     return crypto
       .createHash('sha256')
-      .update(this.previousHash + this.timestamp + this.transaction.toString())
+      .update(this.previousHash + this.timestamp + JSON.stringify(this.transaction))
       .digest('hex');
   }
 
