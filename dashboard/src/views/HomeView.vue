@@ -9,6 +9,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import LineChart from '../../../dashboard/src/components/LineChart.vue';
 import { useChartData } from '../../../dashboard/src/composables/useChartData';
 import {
   Chart as ChartJS,

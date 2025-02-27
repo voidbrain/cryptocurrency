@@ -61,3 +61,4 @@ coverage/
 # Optional IDE directories
 .vscode/
 .idea/
+dashboard/package-lock.json
