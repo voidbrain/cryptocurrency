@@ -1,0 +1,35 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    environment:
+      - NODE_ENV=development
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./backend/src:/app/src
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+
+  miner:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    depends_on:
+      - backend
+
+networks:
+  default:
+    driver: bridge
