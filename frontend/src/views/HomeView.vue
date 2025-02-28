@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import axios from 'axios';
+import { getPeer } from '@/composables/peer';
 
 const fromUser = ref('');
 const toUser = ref('');
@@ -108,27 +109,10 @@ const sendTransaction = async () => {
   }
 };
 
-const getPeers = async () => {
-  try {
-    console.log('http://central-registry:4000/peers')
-    const response = await axios.get('http://central-registry:4000/peers');
-    return response.data.peers;
-  } catch (error) {
-    console.error('Failed to get peers from central registry:', error);
-    return [];
-  }
-};
-
 onMounted(async () => {
   try {
-    const peers = await getPeers();
-    if (peers.length === 0) {
-      console.error('No peers available to mine block');
-      return;
-    }
+    peer.value = await getPeer();
 
-    // Choose a random peer to mine the block
-    peer.value = peers[Math.floor(Math.random() * peers.length)];
     const response = await axios.get(`${peer.value}/api/order/price`);
     marketPrice.value = response.data.marketPrice;
   } catch (error) {

@@ -1,7 +1,7 @@
 <template>
   <div>
     <h1>NodeCoin Dashboard</h1>
-    <p>Current Market Price: €{{ marketPrice.toFixed(2) }}</p>
+    <p>Current Market Price: €{{ marketPrice?.toFixed(2) }}</p>
     <LineChart :chartData="chartData" :chartOptions="chartOptions" />
     <div>
       <label for="fromUser">From:</label>
@@ -42,6 +42,7 @@ import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import LineChart from '@/components/LineChart.vue';
 import { useChartData } from '@/composables/useChartData';
+import { getPeer } from '@/composables/peer';
 import {
   Chart as ChartJS,
   Title,
@@ -63,6 +64,7 @@ const balance = ref(0);
 const publicKey = ref('');
 const privateKey = ref('');
 const marketPrice = ref(0);
+const peer = ref('');
 
 const { chartData, chartOptions } = useChartData();
 
@@ -93,7 +95,7 @@ const createWallet = async () => {
     const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(exportedPublicKey)));
     publicKey.value = publicKeyBase64;
 
-    const response = await axios.post('/api/wallet/create', {
+    const response = await axios.post(`${peer.value}/api/wallet/create`, {
       username: fromUser.value,
       publicKey: publicKey.value,
     });
@@ -109,7 +111,7 @@ const createWallet = async () => {
 
 const addFunds = async () => {
   try {
-    const response = await axios.post('/api/wallet/add-funds', {
+    const response = await axios.post(`${peer.value}/api/wallet/add-funds`, {
       username: fromUser.value,
       amount: amount.value,
     });
@@ -140,7 +142,7 @@ const getBalance = async () => {
 
 const getChainInstance = async () => {
   try {
-    const response = await axios.get('/api/chain-instance');
+    const response = await axios.get(`${peer.value}/api/chain-instance`);
     console.log('Chain instance:', response.data);
   } catch (error) {
     console.error('Error getting chain instance:', error);
@@ -149,7 +151,7 @@ const getChainInstance = async () => {
 
 const sendTransaction = async () => {
   try {
-    const response = await axios.post('/api/send', {
+    const response = await axios.post(`${peer.value}/api/send`, {
       from: fromUser.value,
       to: toUser.value,
       value: value.value,
@@ -162,8 +164,10 @@ const sendTransaction = async () => {
 
 onMounted(async () => {
   try {
-    const response = await axios.get('/api/market-price');
-    marketPrice.value = response.data.price;
+    peer.value = await getPeer();
+
+    const response = await axios.get(`${peer.value}/api/order/market-price`);
+    marketPrice.value = response.data.marketPrice;
     // fetchChartData(marketPrice.value);
   } catch (error) {
     console.error('Error fetching market price:', error);

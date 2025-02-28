@@ -40,7 +40,7 @@ app.post('/mine', (req, res) => {
   const { block } = req.body;
   const newBlock = new Block(block.previousHash, block.transaction, block.timestamp);
   newBlock.hash = block.hash;
-  console.log(blockchain.isChainValid([...blockchain.chain, newBlock]));
+  console.log("isChainValid", blockchain.isChainValid([...blockchain.chain, newBlock]));
   if (blockchain.isChainValid([...blockchain.chain, newBlock])) {
     blockchain.addBlock(block.transaction);
     res.send({ added: true });
@@ -131,7 +131,7 @@ const startServer = async (port) => {
   const domain = process.env.DOMAIN || '0.0.0.0'; // Default to '0.0.0.0' to listen on all network interfaces
 
   app.listen(port, domain, async () => {
-    console.log(`Server is running on port ${port}`);
+    console.log(`Server is running on port ${domain}:${port}`);
 
     // Register with the central registry
     try {

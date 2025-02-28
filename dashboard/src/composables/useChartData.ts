@@ -1,6 +1,19 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 
+const peer = ref('');
+
+export async function getPeers() {
+  try {
+
+    const response = await axios.get('http://central-registry:4000/peers');
+    return response.data.peers;
+  } catch (error) {
+    console.error('Failed to get peers from central registry:', error);
+    return [];
+  }
+};
+
 export function useChartData() {
   const chartData = ref({
     labels: [],
@@ -44,10 +57,20 @@ export function useChartData() {
 
   const fetchChartData = async () => {
     try {
+      const peers = await getPeers();
+    if (peers.length === 0) {
+      console.error('No peers available to mine block');
+      return;
+    }
+
+    // Choose a random peer to mine the block
+    peer.value = peers[Math.floor(Math.random() * peers.length)];
+
+
       const [nodeCoinCapResponse, totalTokensResponse, availableTokensResponse] = await Promise.all([
-        axios.get('/api/history/nodeCoinCap'),
-        axios.get('/api/history/totalTokens'),
-        axios.get('/api/history/availableTokens'),
+        axios.get(`${peer.value}/api/history/nodeCoinCap`),
+        axios.get(`${peer.value}/api/history/totalTokens`),
+        axios.get(`${peer.value}/api/history/availableTokens`),
       ]);
 
       const nodeCoinCapData = nodeCoinCapResponse.data;

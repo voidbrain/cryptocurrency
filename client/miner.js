@@ -1,6 +1,8 @@
 const axios = require('axios');
 const crypto = require('crypto');
 
+let peer = '';
+
 class Transaction {
   constructor(amount, senderPublicKey, receiverPublicKey) {
     this.amount = amount;
@@ -64,11 +66,20 @@ class Block {
   }
 }
 
-const getPeers = async () => {
+const getPeer = async () => {
   try {
     console.log('http://central-registry:4000/peers')
     const response = await axios.get('http://central-registry:4000/peers');
-    return response.data.peers;
+    console.log("---->", response.data)
+    const peers = response.data.peers;
+    if (peers.length === 0) {
+      console.error('No peers available to mine block');
+      return;
+    }
+  
+    // Choose a random peer to mine the block
+    peer = peers[Math.floor(Math.random() * peers.length)];
+    return peer;
   } catch (error) {
     console.error('Failed to get peers from central registry:', error);
     return [];
@@ -77,8 +88,8 @@ const getPeers = async () => {
 
 const getBlockchainParams = async () => {
   try {
-    console.log('http://backend:3000/blockchain-params')
-    const response = await axios.get('http://backend:3000/blockchain-params');
+    console.log(`${peer}/blockchain-params`)
+    const response = await axios.get(`${peer}/blockchain-params`);
     return response.data;
   } catch (error) {
     console.error('Failed to get blockchain parameters:', error);
@@ -88,8 +99,8 @@ const getBlockchainParams = async () => {
 
 const notifyMiningTime = async (miningTime) => {
   try {
-    console.log('http://backend:3000/api/history/mining-time', { miningTime })
-    await axios.post('http://backend:3000/api/history/mining-time', { miningTime });
+    console.log(`${peer}/api/history/mining-time`, { miningTime })
+    await axios.post(`${peer}/api/history/mining-time`, { miningTime });
     console.log('Mining time notified to backend');
   } catch (error) {
     console.error('Failed to notify mining time to backend:', error);
@@ -97,16 +108,7 @@ const notifyMiningTime = async (miningTime) => {
 };
 
 const mineBlock = async (blockchainParams) => {
-  const peers = await getPeers();
-  if (peers.length === 0) {
-    console.error('No peers available to mine block');
-    return;
-  }
-
-  // Choose a random peer to mine the block
-  const peer = peers[Math.floor(Math.random() * peers.length)];
   try {
-    console.log(peer)
     console.log(`${peer}/blockchain`)
     const response = await axios.get(`${peer}/blockchain`);
     const blockchain = response.data;
@@ -136,6 +138,7 @@ const mineBlock = async (blockchainParams) => {
 const alicePublicKey = `MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAztroh5/CC1u39w4xzgVMW6JNMUXshRUgQYCmBqUlx2FDiY3dtQXgWzeaoTYRXY2zTveXwDVogWgAGhDYjQRXj8oqEs1zpAUp4Xr1FqnpWjLQkdxW++MqALk4A/9MELRkqJlSjcnSKBuoomOhfDIgUyLy97X2VsWf2W+Xr1sCrPvl7lMEcFaBqYFotXfWK4IEjNMYNRtdFPbtQPJEkSCEblu6fen9iikmW+Tpu9znpNnaJa0LWbyY4xsRxFKfUjEY24eq+nTqVkyjPSLJrPuQpLfjql5luZfFbg+2qeAPj/jHWCRskTFyqwJdBIsmXqm6PBrW+CAX0JiwhynBG9Jq0QIDAQAB`;
 
 const startMining = async () => {
+  peer = await getPeer();
   const blockchainParams = await getBlockchainParams();
   if (!blockchainParams) {
     console.error('Failed to get blockchain parameters. Mining aborted.');

@@ -47,35 +47,35 @@ services:
     networks:
       - cryptonetwork
 
-  blockchain-server-1:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "3001:3000"
-    depends_on:
-      - central-registry
-    environment:
-      - NODE_ENV=development
-      - PORT=3001
-      - DOMAIN=blockchain-server-1
-    networks:
-      - cryptonetwork
+  # blockchain-server-1:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3001:3000"
+  #   depends_on:
+  #     - central-registry
+  #   environment:
+  #     - NODE_ENV=development
+  #     - PORT=3001
+  #     - DOMAIN=blockchain-server-1
+  #   networks:
+  #     - cryptonetwork
 
-  blockchain-server-2:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    ports:
-      - "3002:3000"
-    depends_on:
-      - central-registry
-    environment:
-      - NODE_ENV=development
-      - PORT=3002
-      - DOMAIN=blockchain-server-2
-    networks:
-      - cryptonetwork
+  # blockchain-server-2:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3002:3000"
+  #   depends_on:
+  #     - central-registry
+  #   environment:
+  #     - NODE_ENV=development
+  #     - PORT=3002
+  #     - DOMAIN=blockchain-server-2
+  #   networks:
+  #     - cryptonetwork
 
   miner:
     build:
