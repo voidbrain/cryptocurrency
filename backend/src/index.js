@@ -128,12 +128,14 @@ const startServer = async (port) => {
     port += 1;
     available = await checkPort(port);
   }
-  app.listen(port, async () => {
+  const domain = process.env.DOMAIN || '0.0.0.0'; // Default to '0.0.0.0' to listen on all network interfaces
+
+  app.listen(port, domain, async () => {
     console.log(`Server is running on port ${port}`);
 
     // Register with the central registry
     try {
-      const response = await axios.post('http://central-registry:4000/register-peer', { peer: `http://localhost:${port}` });
+      const response = await axios.post('http://central-registry:4000/register-peer', { peer: `http://${domain}:${port}` });
       const { peers: registeredPeers } = response.data;
       registeredPeers.forEach(peer => {
         if (!peers.includes(peer)) {

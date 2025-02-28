@@ -5,8 +5,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-COPY src/centralRegistry.js ./src/centralRegistry.js
+COPY . .
 
 EXPOSE 4000
 
-CMD ["node", "src/centralRegistry.js"]
+CMD ["node", "centralRegistry.js"]
