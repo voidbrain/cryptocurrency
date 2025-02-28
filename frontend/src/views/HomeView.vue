@@ -10,6 +10,7 @@ const balance = ref(0);
 const publicKey = ref('');
 const privateKey = ref('');
 const marketPrice = ref(0);
+const peer = ref('');
 
 const createWallet = async () => {
   try {
@@ -40,7 +41,7 @@ const createWallet = async () => {
     const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(exportedPublicKey)));
     publicKey.value = publicKeyBase64;
 
-    const response = await axios.post('/api/wallet/create', {
+    const response = await axios.post(`${peer.value}/api/wallet/create`, {
       username: fromUser.value,
       publicKey: publicKey.value,
     });
@@ -56,7 +57,7 @@ const createWallet = async () => {
 
 const addFunds = async () => {
   try {
-    const response = await axios.post('/api/wallet/add-funds', {
+    const response = await axios.post(`${peer.value}/api/wallet/add-funds`, {
       username: fromUser.value,
       amount: amount.value,
     });
@@ -68,7 +69,7 @@ const addFunds = async () => {
 
 const getWallet = async () => {
   try {
-    const response = await axios.get(`/api/wallet/${fromUser.value}`);
+    const response = await axios.get(`${peer.value}/api/wallet/${fromUser.value}`);
     console.log('Wallet:', response.data);
   } catch (error) {
     console.error('Error getting wallet:', error);
@@ -77,7 +78,7 @@ const getWallet = async () => {
 
 const getBalance = async () => {
   try {
-    const response = await axios.get(`/api/wallet/${fromUser.value}/balance`);
+    const response = await axios.get(`${peer.value}/api/wallet/${fromUser.value}/balance`);
     balance.value = response.data.balance;
     console.log('Balance:', response.data);
   } catch (error) {
@@ -87,7 +88,7 @@ const getBalance = async () => {
 
 const getChainInstance = async () => {
   try {
-    const response = await axios.get('/api/chain-instance');
+    const response = await axios.get(`${peer.value}/api/chain-instance`);
     console.log('Chain instance:', response.data);
   } catch (error) {
     console.error('Error getting chain instance:', error);
@@ -96,7 +97,7 @@ const getChainInstance = async () => {
 
 const sendTransaction = async () => {
   try {
-    const response = await axios.post('/api/transaction/send', {
+    const response = await axios.post(`${peer.value}/api/transaction/send`, {
       from: fromUser.value,
       to: toUser.value,
       value: value.value,
@@ -107,9 +108,28 @@ const sendTransaction = async () => {
   }
 };
 
+const getPeers = async () => {
+  try {
+    console.log('http://central-registry:4000/peers')
+    const response = await axios.get('http://central-registry:4000/peers');
+    return response.data.peers;
+  } catch (error) {
+    console.error('Failed to get peers from central registry:', error);
+    return [];
+  }
+};
+
 onMounted(async () => {
   try {
-    const response = await axios.get('/api/order/price');
+    const peers = await getPeers();
+    if (peers.length === 0) {
+      console.error('No peers available to mine block');
+      return;
+    }
+
+    // Choose a random peer to mine the block
+    peer.value = peers[Math.floor(Math.random() * peers.length)];
+    const response = await axios.get(`${peer.value}/api/order/price`);
     marketPrice.value = response.data.marketPrice;
   } catch (error) {
     console.error('Error fetching market price:', error);

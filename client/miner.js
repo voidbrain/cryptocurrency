@@ -66,8 +66,8 @@ class Block {
 
 const getPeers = async () => {
   try {
-    console.log('http://host.docker.internal:4000/peers')
-    const response = await axios.get('http://host.docker.internal:4000/peers');
+    console.log('http://central-registry:4000/peers')
+    const response = await axios.get('http://central-registry:4000/peers');
     return response.data.peers;
   } catch (error) {
     console.error('Failed to get peers from central registry:', error);
@@ -77,8 +77,8 @@ const getPeers = async () => {
 
 const getBlockchainParams = async () => {
   try {
-    console.log('http://host.docker.internal:3000/blockchain-params')
-    const response = await axios.get('http://host.docker.internal:3000/blockchain-params');
+    console.log('http://backend:3000/blockchain-params')
+    const response = await axios.get('http://backend:3000/blockchain-params');
     return response.data;
   } catch (error) {
     console.error('Failed to get blockchain parameters:', error);
@@ -88,8 +88,8 @@ const getBlockchainParams = async () => {
 
 const notifyMiningTime = async (miningTime) => {
   try {
-    console.log('http://host.docker.internal:3000/api/history/mining-time', { miningTime })
-    await axios.post('http://host.docker.internal:3000/api/history/mining-time', { miningTime });
+    console.log('http://backend:3000/api/history/mining-time', { miningTime })
+    await axios.post('http://backend:3000/api/history/mining-time', { miningTime });
     console.log('Mining time notified to backend');
   } catch (error) {
     console.error('Failed to notify mining time to backend:', error);
