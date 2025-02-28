@@ -66,7 +66,8 @@ class Block {
 
 const getPeers = async () => {
   try {
-    const response = await axios.get('http://central-registry:4000/peers');
+    console.log('http://host.docker.internal:4000/peers')
+    const response = await axios.get('http://host.docker.internal:4000/peers');
     return response.data.peers;
   } catch (error) {
     console.error('Failed to get peers from central registry:', error);
@@ -76,7 +77,8 @@ const getPeers = async () => {
 
 const getBlockchainParams = async () => {
   try {
-    const response = await axios.get('http://blockchain-server-2:3002/blockchain-params');
+    console.log('http://host.docker.internal:3000/blockchain-params')
+    const response = await axios.get('http://host.docker.internal:3000/blockchain-params');
     return response.data;
   } catch (error) {
     console.error('Failed to get blockchain parameters:', error);
@@ -86,7 +88,8 @@ const getBlockchainParams = async () => {
 
 const notifyMiningTime = async (miningTime) => {
   try {
-    await axios.post('http://localhost:3000/api/history/mining-time', { miningTime });
+    console.log('http://host.docker.internal:3000/api/history/mining-time', { miningTime })
+    await axios.post('http://host.docker.internal:3000/api/history/mining-time', { miningTime });
     console.log('Mining time notified to backend');
   } catch (error) {
     console.error('Failed to notify mining time to backend:', error);
@@ -104,6 +107,7 @@ const mineBlock = async (blockchainParams) => {
   const peer = peers[Math.floor(Math.random() * peers.length)];
   try {
     console.log(peer)
+    console.log(`${peer}/blockchain`)
     const response = await axios.get(`${peer}/blockchain`);
     const blockchain = response.data;
     const previousBlock = blockchain[blockchain.length - 1];
@@ -117,6 +121,7 @@ const mineBlock = async (blockchainParams) => {
     const difficulty = blockchainParams.difficulty;
     const miningTime = newBlock.mineBlock(difficulty);
 
+    console.log(`${peer}/mine`, { block: newBlock })
     await axios.post(`${peer}/mine`, { block: newBlock });
     console.log('Block mined:', newBlock);
 

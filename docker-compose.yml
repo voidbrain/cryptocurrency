@@ -10,8 +10,8 @@ services:
       - ./frontend/public:/app/public
     environment:
       - NODE_ENV=development
-      - DOMAIN=frontend
       - PORT=80
+      - DOMAIN=frontend
     depends_on:
       - central-registry
     networks:
@@ -42,8 +42,8 @@ services:
       - "4000:4000"
     environment:
       - NODE_ENV=development
-      - DOMAIN=central-registry
       - PORT=4000
+      - DOMAIN=central-registry
     networks:
       - cryptonetwork
 
@@ -86,9 +86,9 @@ services:
     depends_on:
       - central-registry
     environment:
+      - NODE_ENV=development
       - PORT=3005
       - DOMAIN=localhost
-      - DOMAIN=miner
     networks:
       - cryptonetwork
 
