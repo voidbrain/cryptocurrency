@@ -10,7 +10,8 @@ services:
       - ./frontend/public:/app/public
     environment:
       - NODE_ENV=development
-      - DOMAIN=localhost
+      - DOMAIN=frontend
+      - PORT=8080
     depends_on:
       - central-registry
 
@@ -25,7 +26,10 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - DOMAIN=localhost
+      - DOMAIN=backend
+    depends_on:
+      - central-registry
+    
 
   central-registry:
     build:
@@ -33,6 +37,11 @@ services:
       dockerfile: Dockerfile
     ports:
       - "4000:4000"
+    environment:
+      - NODE_ENV=development
+      - DOMAIN=central-registry
+      - PORT=4000
+
 
   blockchain-server-1:
     build:
@@ -43,8 +52,9 @@ services:
     depends_on:
       - central-registry
     environment:
+      - NODE_ENV=development
       - PORT=3001
-      - DOMAIN=localhost
+      - DOMAIN=blockchain-server-1
 
   blockchain-server-2:
     build:
@@ -55,8 +65,9 @@ services:
     depends_on:
       - central-registry
     environment:
+      - NODE_ENV=development
       - PORT=3002
-      - DOMAIN=localhost
+      - DOMAIN=blockchain-server-2
 
   miner:
     build:
@@ -69,6 +80,7 @@ services:
     environment:
       - PORT=3005
       - DOMAIN=localhost
+      - DOMAIN=miner
 
   dashboard:
     build:
@@ -79,10 +91,10 @@ services:
     depends_on:
       - central-registry
     environment:
+      - PORT=3003
       - NODE_ENV=development
-      - DOMAIN=localhost
-    extra_hosts:
-      - "central-registry:127.0.0.1"
+      - DOMAIN=dashboard
+    
 
 networks:
   default:
