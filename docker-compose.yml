@@ -4,16 +4,18 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - '8080:8080'
+      - '8080:80'
     volumes:
       - ./frontend/src:/app/src
       - ./frontend/public:/app/public
     environment:
       - NODE_ENV=development
       - DOMAIN=frontend
-      - PORT=8080
+      - PORT=80
     depends_on:
       - central-registry
+    networks:
+      - cryptonetwork
 
   backend:
     build:
@@ -29,7 +31,8 @@ services:
       - DOMAIN=backend
     depends_on:
       - central-registry
-    
+    networks:
+      - cryptonetwork
 
   central-registry:
     build:
@@ -41,33 +44,38 @@ services:
       - NODE_ENV=development
       - DOMAIN=central-registry
       - PORT=4000
-
+    networks:
+      - cryptonetwork
 
   blockchain-server-1:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "3001:3001"
+      - "3001:3000"
     depends_on:
       - central-registry
     environment:
       - NODE_ENV=development
       - PORT=3001
       - DOMAIN=blockchain-server-1
+    networks:
+      - cryptonetwork
 
   blockchain-server-2:
     build:
       context: ./backend
       dockerfile: Dockerfile
     ports:
-      - "3002:3002"
+      - "3002:3000"
     depends_on:
       - central-registry
     environment:
       - NODE_ENV=development
       - PORT=3002
       - DOMAIN=blockchain-server-2
+    networks:
+      - cryptonetwork
 
   miner:
     build:
@@ -81,21 +89,28 @@ services:
       - PORT=3005
       - DOMAIN=localhost
       - DOMAIN=miner
+    networks:
+      - cryptonetwork
 
   dashboard:
     build:
       context: ./dashboard
       dockerfile: Dockerfile
     ports:
-      - '3003:3003'
-    depends_on:
-      - central-registry
+      - '8081:80'
+    volumes:
+      - ./dashboard/src:/app/src
+      - ./dashboard/public:/app/public
     environment:
-      - PORT=3003
       - NODE_ENV=development
       - DOMAIN=dashboard
+      - PORT=80
+    depends_on:
+      - central-registry
+    networks:
+      - cryptonetwork
     
 
 networks:
-  default:
+  cryptonetwork:
     driver: bridge

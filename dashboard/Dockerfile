@@ -1,5 +1,5 @@
-# Use the official Node.js image as the base image
-FROM node:22
+# Stage 1: Build the Vue.js application
+FROM node:18 AS build-stage
 
 # Set the working directory
 WORKDIR /app
@@ -13,14 +13,17 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
-# Build the Vue application
+# Build the Vue.js application
 RUN npm run build
 
-# Install serve to serve the built application
-RUN npm install -g serve
+# Stage 2: Serve the built application with Nginx
+FROM nginx:alpine AS production-stage
 
-# Expose the port the app runs on
-EXPOSE 5000
+# Copy the built application from the previous stage
+COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-# Command to run the application
-CMD ["serve", "-s", "dist", "-l", "5000"]
+# Expose port 80
+EXPOSE 80
+
+# Start Nginx server
+CMD ["nginx", "-g", "daemon off;"]

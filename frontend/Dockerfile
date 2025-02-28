@@ -1,5 +1,5 @@
-# Use the official Node.js image as the base image
-FROM node:22-alpine AS build
+# Stage 1: Build the Vue.js application
+FROM node:18 AS build-stage
 
 # Set the working directory
 WORKDIR /app
@@ -16,11 +16,11 @@ COPY . .
 # Build the Vue.js application
 RUN npm run build
 
-# Use a minimal Node.js image to serve the built application
-FROM nginx:alpine
+# Stage 2: Serve the built application with Nginx
+FROM nginx:alpine AS production-stage
 
 # Copy the built application from the previous stage
-COPY --from=0 /app/dist /usr/share/nginx/html
+COPY --from=build-stage /app/dist /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80
