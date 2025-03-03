@@ -20,7 +20,6 @@ const peers = []; // List of peer nodes
 
 // Logging middleware
 app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}`);
   next();
 });
 
@@ -40,7 +39,6 @@ app.post('/mine', (req, res) => {
   const { block } = req.body;
   const newBlock = new Block(block.previousHash, block.transaction, block.timestamp);
   newBlock.hash = block.hash;
-  console.log("isChainValid", blockchain.isChainValid([...blockchain.chain, newBlock]));
   if (blockchain.isChainValid([...blockchain.chain, newBlock])) {
     blockchain.addBlock(block.transaction);
     res.send({ added: true });
