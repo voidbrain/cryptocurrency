@@ -49,6 +49,7 @@ class Blockchain {
   }
 
   isChainValid(chain) {
+    console.log("chain: ", chain[chain.length - 1])
     for (let i = 1; i < chain.length; i++) {
       const currentBlock = chain[i];
       const previousBlock = chain[i - 1];

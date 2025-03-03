@@ -56,8 +56,8 @@ class Block {
     }
     const endTime = Date.now();
     const miningTime = (endTime - startTime) / 1000;
-    console.log(`Block mined: ${this.hash}`);
-    console.log(`Mining took ${miningTime} seconds`);
+    // console.log(`Block mined: ${this.hash}`);
+    // console.log(`Mining took ${miningTime} seconds`);
     return miningTime;
   }
 
@@ -68,9 +68,7 @@ class Block {
 
 const getPeer = async () => {
   try {
-    console.log('http://central-registry:4000/peers')
     const response = await axios.get('http://central-registry:4000/peers');
-    console.log("---->", response.data)
     const peers = response.data.peers;
     if (peers.length === 0) {
       console.error('No peers available to mine block');
@@ -88,7 +86,6 @@ const getPeer = async () => {
 
 const getBlockchainParams = async () => {
   try {
-    console.log(`${peer}/blockchain-params`)
     const response = await axios.get(`${peer}/blockchain-params`);
     return response.data;
   } catch (error) {
@@ -99,9 +96,7 @@ const getBlockchainParams = async () => {
 
 const notifyMiningTime = async (miningTime) => {
   try {
-    console.log(`${peer}/api/history/mining-time`, { miningTime })
     await axios.post(`${peer}/api/history/mining-time`, { miningTime });
-    console.log('Mining time notified to backend');
   } catch (error) {
     console.error('Failed to notify mining time to backend:', error);
   }
@@ -109,7 +104,6 @@ const notifyMiningTime = async (miningTime) => {
 
 const mineBlock = async (blockchainParams) => {
   try {
-    console.log(`${peer}/blockchain`)
     const response = await axios.get(`${peer}/blockchain`);
     const blockchain = response.data;
     const previousBlock = blockchain[blockchain.length - 1];
@@ -123,9 +117,8 @@ const mineBlock = async (blockchainParams) => {
     const difficulty = blockchainParams.difficulty;
     const miningTime = newBlock.mineBlock(difficulty);
 
-    console.log(`${peer}/mine`, { block: newBlock })
     await axios.post(`${peer}/mine`, { block: newBlock });
-    console.log('Block mined:', newBlock);
+    // console.log('Block mined:', newBlock);
 
     // Notify the backend about the mining time
     await notifyMiningTime(miningTime);
