@@ -41,7 +41,7 @@ app.get('/blockchain', (req, res) => {
 app.post('/mine', async (req, res) => {
   const { data } = req.body;
 
-  if (!data) {
+  if (!data.timestamp || !data.transaction || !data.previousHash || !data.hash || !data.nonce) {
     return res.status(400).send('Data is missing');
   }
 
@@ -58,6 +58,7 @@ app.post('/mine', async (req, res) => {
 
   // Validate the chain
   const isValid = blockchain.isChainValid();
+  console.log("isValid", isValid)
   if (!isValid) {
     return res.status(400).send('Invalid blockchain');
   }
