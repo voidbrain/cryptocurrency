@@ -21,10 +21,10 @@ const blockchain = new Blockchain();
 const peers = []; // List of peer nodes
 
 // Logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}, ${req.body}`);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log(`${req.method} ${req.url}, ${req.body}`);
+//   next();
+// });
 
 app.use('/api/chain', chainRoutes);
 app.use('/api/transaction', transactionRoutes);
@@ -90,22 +90,6 @@ app.post('/register-peer', (req, res) => {
   res.send({ peers });
 });
 
-// Endpoint to check if a wallet exists
-app.get('/wallet-exists/:publicKey', (req, res) => {
-  const { publicKey } = req.params;
-  const query = `SELECT * FROM wallets WHERE publicKey = ?`;
-  db.get(query, [publicKey], (err, row) => {
-    if (err) {
-      console.error('Failed to check wallet existence:', err);
-      res.status(500).send('Server error');
-    } else if (row) {
-      res.send({ exists: true });
-    } else {
-      res.send({ exists: false });
-    }
-  });
-});
-
 // Endpoint to get blockchain parameters
 app.get('/blockchain-params', (req, res) => {
   res.send(blockchain.getBlockchainParams());
@@ -119,8 +103,8 @@ app.get('/chain', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err, req, res, next);
-  res.status(500).send('Something broke!');
+  // console.error(err, req, res, next);
+  // res.status(500).send('Something broke!');
 });
 
 // Parse the port from command-line arguments

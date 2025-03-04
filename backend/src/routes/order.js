@@ -61,7 +61,7 @@ router.get('/market-price', (req, res) => {
 });
 
 // Example endpoint to create an order
-router.post('/create-order', (req, res) => {
+router.post('/create', (req, res) => {
   const { type, amount, price } = req.body;
   db.run('INSERT INTO orders (type, amount, price) VALUES (?, ?, ?)', [type, amount, price], (err) => {
     if (err) {
@@ -174,7 +174,7 @@ router.post('/sell', (req, res) => {
 
 router.get('/price', (req, res) => {
   const price = 1;
-  res.status(200).send({ price });
+  res.send({ price });
 
   // db.all('SELECT * FROM order', (err, rows) => {
   //   if (err) {

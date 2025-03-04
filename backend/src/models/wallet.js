@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 
 class Wallet {
-  constructor(username) {
+  constructor(username, publicKey, balance) {
     if (!username) {
       throw new Error('Wallet must have a valid username');
     }
@@ -13,9 +13,8 @@ class Wallet {
       privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
     });
 
-    this.publicKey = keys.publicKey;
-    this.privateKey = keys.privateKey;
-    this.balance = 0;
+    this.publicKey = publicKey;
+    this.balance = balance;
   }
 
   addFunds(amount) {

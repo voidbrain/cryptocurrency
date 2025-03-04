@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const db = require('../db'); // Assuming you have a database module
+const db = require('../db'); // Ensure the database module is correctly imported
 const Chain = require('../models/blockchain'); // Assuming you have a blockchain module
 const Transaction = require('../models/transaction'); // Assuming you have a transaction module
 const crypto = require('crypto').webcrypto;
@@ -24,7 +24,7 @@ const verifySignature = async (publicKey, signature, data) => {
     },
     key,
     Uint8Array.from(atob(signature), c => c.charCodeAt(0)),
-    data
+    new TextEncoder().encode(data)
   );
 
   return isValid;
@@ -78,7 +78,7 @@ router.post('/send', async (req, res) => {
     await new Promise((resolve, reject) => {
       db.run(
         'INSERT INTO chain (previousHash, transaction_data, timestamp, hash) VALUES (?, ?, ?, ?)',
-        [newBlock.previousHash, newBlock.transaction.toString(), newBlock.timestamp, newBlock.hash],
+        [newBlock.previousHash, JSON.stringify(newBlock.transaction), newBlock.timestamp, newBlock.hash],
         (err) => {
           if (err) {
             reject(err);
@@ -87,6 +87,14 @@ router.post('/send', async (req, res) => {
           }
         }
       );
+    });
+
+    // Add the transaction to the database
+    await db.addTransaction({
+      senderPublicKey,
+      receiverPublicKey: to,
+      amount: value,
+      timestamp: Date.now()
     });
 
     // Update sender's and receiver's token availability

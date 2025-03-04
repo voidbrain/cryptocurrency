@@ -140,6 +140,64 @@ const all = (query, params = []) => {
   });
 };
 
+const addTransaction = (transaction) => {
+  return new Promise((resolve, reject) => {
+    db.run('INSERT INTO transactions (senderPublicKey, receiverPublicKey, amount, timestamp) VALUES (?, ?, ?, ?)', 
+      [transaction.senderPublicKey, transaction.receiverPublicKey, transaction.amount, transaction.timestamp], 
+      (err) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      }
+    );
+  });
+};
+
+const getTransactions = () => {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM transactions ORDER BY "timestamp"', (err, rows) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(rows);
+    });
+  });
+};
+
+const getWalletByPublicKey = (publicKey) => {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM wallets WHERE publicKey = ?', [publicKey], (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(row);
+    });
+  });
+};
+
+const getWalletByUsername = (username) => {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT * FROM wallets WHERE username = ?', [username], (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(row);
+    });
+  });
+};
+
+const getWalletBalanceByUsername = (username) => {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT balance FROM wallets WHERE username = ?', [username], (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(row ? row.balance : 0);
+    });
+  });
+};
+
 class Block {
   constructor(previousHash, transaction, timestamp = Date.now(), nonce = 0) {
     this.previousHash = previousHash;
@@ -173,4 +231,7 @@ module.exports = {
   all,
   addTransaction,
   getTransactions,
+  getWalletByPublicKey,
+  getWalletByUsername,
+  getWalletBalanceByUsername,
 };

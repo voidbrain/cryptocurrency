@@ -98,7 +98,6 @@ const createWallet = async () => {
     const balance = 0;
 
     const response = await axios.post(`${peer.value}/api/wallet/create`, {
-      username: fromUser.value,
       publicKey: publicKey.value,
       balance
     });
