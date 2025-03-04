@@ -85,8 +85,7 @@ const mineBlock = async (blockchainParams) => {
     const difficulty = blockchainParams.difficulty;
     const miningTime = newBlock.mineBlock(difficulty);
 
-    console.log("transaction:", newBlock.transaction)
-    await axios.post(`${peer}/mine`, { data: newBlock.transaction });
+    await axios.post(`${peer}/mine`, { data: newBlock });
 
     // Notify the backend about the mining time
     await notifyMiningTime(miningTime);

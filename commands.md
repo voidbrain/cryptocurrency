@@ -1,4 +1,6 @@
-BLOCKCHAIN
+# COMMANDS
+
+## BLOCKCHAIN
 
 - 1 Get the Blockchain (OK)
 
@@ -6,7 +8,7 @@ BLOCKCHAIN
 curl -X GET http://localhost:3000/blockchain
 ```
 
-- 2 Mine a New Block
+- 2 Mine a New Block (WIP)
 Assuming you have a block object with the necessary data:
 
 ```sh
@@ -89,8 +91,7 @@ curl -X POST http://central-registry:4000/register-peer \
 curl -X GET http://localhost:3000/blockchain-params
 ```
 
-
-WALLET
+## WALLET
 
 - 1 Create a Wallet (OK)
 
@@ -124,12 +125,10 @@ curl -X POST http://localhost:3000/api/transaction/send \
     "from": "key1",
     "to": "key2",
     "value": 10,
-    "signature": "transactionSignature",
-    "data": "transactionData"
   }'
 ```
 
-ORDERS
+## ORDERS
 
 - 1 Create an order
 
