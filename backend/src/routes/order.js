@@ -173,24 +173,31 @@ router.post('/sell', (req, res) => {
 });
 
 router.get('/price', (req, res) => {
-  db.all('SELECT * FROM orders', (err, rows) => {
-    if (err) {
-      res.status(500).send('Error retrieving orders');
-    } else {
-      const buyOrders = rows.filter(order => order.type === 'buy');
-      const sellOrders = rows.filter(order => order.type === 'sell');
+  const price = 1;
+  res.status(200).send({ price });
 
-      const totalBuyAmount = buyOrders.reduce((sum, order) => sum + order.amount, 0);
-      const totalSellAmount = sellOrders.reduce((sum, order) => sum + order.amount, 0);
+  // db.all('SELECT * FROM order', (err, rows) => {
+  //   if (err) {
+  //     console.log("err");
+  //     res.status(500).send('Error retrieving orders');
+  //   } else {
+  //     const buyOrders = rows.filter(order => order.type === 'buy');
+  //     const sellOrders = rows.filter(order => order.type === 'sell');
 
-      calculateMarketPrice(totalBuyAmount, totalSellAmount)
-        .then(marketPrice => res.json({ marketPrice }))
-        .catch(error => {
-          console.error('Failed to calculate market price:', error);
-          res.status(500).send('Failed to calculate market price');
-        });
-    }
-  });
+  //     const totalBuyAmount = buyOrders.reduce((sum, order) => sum + order.amount, 0);
+  //     const totalSellAmount = sellOrders.reduce((sum, order) => sum + order.amount, 0);
+
+  //     console.log(totalBuyAmount, totalSellAmount);
+
+  //     calculateMarketPrice(totalBuyAmount, totalSellAmount)
+  //       .then(marketPrice => res.json({ marketPrice }))
+  //       .catch(error => {
+  //         // console.error('Failed to calculate market price:', error);
+  //         res.status(500).send('Failed to calculate market price');
+          
+  //       });
+  //   }
+  // });
 });
 
 module.exports = router;

@@ -57,6 +57,7 @@ const getPeer = async () => {
 const getBlockchainParams = async () => {
   try {
     const response = await axios.get(`${peer}/blockchain-params`);
+    console.log('Blockchain parameters:', response.data, " Peer:", peer);
     return response.data;
   } catch (error) {
     console.error('Failed to get blockchain parameters:', error);
@@ -84,8 +85,8 @@ const mineBlock = async (blockchainParams) => {
     const difficulty = blockchainParams.difficulty;
     const miningTime = newBlock.mineBlock(difficulty);
 
+    console.log("transaction:", newBlock.transaction)
     await axios.post(`${peer}/mine`, { data: newBlock.transaction });
-    console.log(`${peer}/mine`, 'Block mined:', newBlock);
 
     // Notify the backend about the mining time
     await notifyMiningTime(miningTime);

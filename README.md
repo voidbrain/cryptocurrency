@@ -4,7 +4,7 @@ This is a fullstack application built with a Node.js backend and a Vue.js fronte
 
 ## Project Structure
 
-```
+```sh
 my-fullstack-app
 ├── backend
 │   ├── src

@@ -5,7 +5,6 @@ import { getPeer } from '@/composables/peer';
 
 const fromUser = ref('');
 const toUser = ref('');
-const value = ref('');
 const amount = ref(0);
 const balance = ref(0);
 const publicKey = ref('');
@@ -42,9 +41,12 @@ const createWallet = async () => {
     const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(exportedPublicKey)));
     publicKey.value = publicKeyBase64;
 
+    const balance = 0;
+
     const response = await axios.post(`${peer.value}/api/wallet/create`, {
       username: fromUser.value,
       publicKey: publicKey.value,
+      balance
     });
 
     // Store the private key securely on the client side
@@ -101,7 +103,7 @@ const sendTransaction = async () => {
     const response = await axios.post(`${peer.value}/api/transaction/send`, {
       from: fromUser.value,
       to: toUser.value,
-      value: value.value,
+      value: amount.value,
     });
     console.log('Transaction sent:', response.data);
   } catch (error) {
@@ -133,10 +135,6 @@ onMounted(async () => {
     <div>
       <label for="toUser">To:</label>
       <input id="toUser" v-model="toUser" type="text" />
-    </div>
-    <div>
-      <label for="value">Value:</label>
-      <input id="value" v-model="value" type="number" />
     </div>
     <div>
       <label for="amount">Amount:</label>

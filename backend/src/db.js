@@ -25,6 +25,48 @@ db.serialize(() => {
       "balance" INT
     )
   `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT,
+      amount REAL,
+      price REAL
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS mining_times (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      miningTime REAL NOT NULL,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS market (
+      id INTEGER PRIMARY KEY,
+      price REAL
+    )
+  `);
+
+  // Create the transactions table if it doesn't exist
+  db.run(`
+    CREATE TABLE IF NOT EXISTS transactions (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "senderPublicKey" TEXT,
+      "receiverPublicKey" TEXT,
+      "amount" REAL,
+      "timestamp" INT
+    )
+  `);
+
+  // Initialize the market table with a default value
+  db.run(`
+    INSERT INTO market (id, price) VALUES (1, 0.0)
+    ON CONFLICT(id) DO NOTHING
+  `);
+
 });
 
 const getChain = () => {
@@ -39,6 +81,7 @@ const getChain = () => {
 };
 
 const addBlock = (block) => {
+  console.log("addBlock", block)
   return new Promise((resolve, reject) => {
     db.run('INSERT INTO chain ("index", "timestamp", "data", "previousHash", "hash", "nonce") VALUES (?, ?, ?, ?, ?, ?)', 
       [block.index, block.timestamp, JSON.stringify(block.data), block.previousHash, block.hash, block.nonce], 
@@ -85,6 +128,18 @@ const createWallet = (publicKey, balance) => {
   });
 };
 
+const all = (query, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.all(query, params, (err, rows) => {
+      if (err) {
+        return reject(err);
+      }
+      console.log(query, params, rows)
+      resolve(rows);
+    });
+  });
+};
+
 class Block {
   constructor(previousHash, transaction, timestamp = Date.now(), nonce = 0) {
     this.previousHash = previousHash;
@@ -115,4 +170,7 @@ module.exports = {
   walletExists,
   updateWalletBalance,
   createWallet,
+  all,
+  addTransaction,
+  getTransactions,
 };

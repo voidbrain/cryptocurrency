@@ -40,7 +40,7 @@ app.get('/blockchain', (req, res) => {
 // Endpoint to add a new block
 app.post('/mine', async (req, res) => {
   const { data } = req.body;
-
+  console.log("mine: ", data)
   if (!data.timestamp || !data.transaction || !data.previousHash || !data.hash || !data.nonce) {
     return res.status(400).send('Data is missing');
   }
@@ -62,7 +62,7 @@ app.post('/mine', async (req, res) => {
   if (!isValid) {
     return res.status(400).send('Invalid blockchain');
   }
-
+  console.log("Block added successfully")
   res.send('Block added successfully');
 });
 
@@ -119,7 +119,7 @@ app.get('/chain', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error(err, req, res, next);
   res.status(500).send('Something broke!');
 });
 

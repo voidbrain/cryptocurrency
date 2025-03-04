@@ -25,7 +25,7 @@ router.post('/create', (req, res) => {
         [wallet.username, wallet.publicKey, wallet.balance],
         (err) => {
           if (err) {
-            console.error('Error creating wallet:', err);
+            console.error('Error creating wallet:', wallet, err);
             res.status(500).send('Error creating wallet');
           } else {
             console.log('Wallet created:', wallet);

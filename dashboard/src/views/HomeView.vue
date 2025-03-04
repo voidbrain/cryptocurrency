@@ -95,9 +95,12 @@ const createWallet = async () => {
     const publicKeyBase64 = btoa(String.fromCharCode(...new Uint8Array(exportedPublicKey)));
     publicKey.value = publicKeyBase64;
 
+    const balance = 0;
+
     const response = await axios.post(`${peer.value}/api/wallet/create`, {
       username: fromUser.value,
       publicKey: publicKey.value,
+      balance
     });
 
     // Store the private key securely on the client side
