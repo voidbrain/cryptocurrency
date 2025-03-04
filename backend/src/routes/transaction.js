@@ -35,19 +35,11 @@ router.post('/send', async (req, res) => {
 
   try {
     // Fetch the sender's public key from the database
-    const senderPublicKey = await new Promise((resolve, reject) => {
-      db.get('SELECT publicKey FROM users WHERE username = ?', [from], (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row ? row.publicKey : null);
-        }
-      });
-    });
-
-    if (!senderPublicKey) {
+    const senderWallet = await db.getWalletByUsername(from);
+    if (!senderWallet) {
       return res.status(400).send('Sender not found');
     }
+    const senderPublicKey = senderWallet.publicKey;
 
     // Verify the signature
     const isValidSignature = await verifySignature(senderPublicKey, signature, data);
@@ -56,22 +48,19 @@ router.post('/send', async (req, res) => {
     }
 
     // Check sender's token availability
-    const senderBalance = await new Promise((resolve, reject) => {
-      db.get('SELECT balance FROM users WHERE username = ?', [from], (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row ? row.balance : 0);
-        }
-      });
-    });
-
-    if (senderBalance < value) {
+    if (senderWallet.balance < value) {
       return res.status(400).send('Insufficient balance');
     }
 
+    // Check if receiver exists
+    const receiverWallet = await db.getWalletByUsername(to);
+    if (!receiverWallet) {
+      return res.status(400).send('Receiver not found');
+    }
+    const receiverPublicKey = receiverWallet.publicKey;
+
     // Create and insert the transaction
-    const transaction = new Transaction(value, from, to);
+    const transaction = new Transaction(value, senderPublicKey, receiverPublicKey);
     Chain.instance.insertBlock(transaction);
 
     const newBlock = Chain.instance.chain[Chain.instance.chain.length - 1];
@@ -92,31 +81,14 @@ router.post('/send', async (req, res) => {
     // Add the transaction to the database
     await db.addTransaction({
       senderPublicKey,
-      receiverPublicKey: to,
+      receiverPublicKey,
       amount: value,
       timestamp: Date.now()
     });
 
     // Update sender's and receiver's token availability
-    await new Promise((resolve, reject) => {
-      db.run('UPDATE users SET balance = balance - ? WHERE username = ?', [value, from], (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
-
-    await new Promise((resolve, reject) => {
-      db.run('UPDATE users SET balance = balance + ? WHERE username = ?', [value, to], (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+    await db.updateWalletBalance(senderPublicKey, -value);
+    await db.updateWalletBalance(receiverPublicKey, value);
 
     res.send('Transaction sent');
   } catch (err) {

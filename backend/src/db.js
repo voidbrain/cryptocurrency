@@ -22,16 +22,18 @@ db.serialize(() => {
   db.run(`
     CREATE TABLE IF NOT EXISTS wallets (
       "publicKey" TEXT PRIMARY KEY,
-      "balance" INT
+      "balance" INT,
+      "username" TEXT
     )
   `);
 
   db.run(`
     CREATE TABLE IF NOT EXISTS orders (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      type TEXT,
-      amount REAL,
-      price REAL
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "type" TEXT,
+      "item" TEXT,
+      "amount" REAL,
+      "price" REAL
     )
   `);
 
@@ -45,8 +47,9 @@ db.serialize(() => {
 
   db.run(`
     CREATE TABLE IF NOT EXISTS market (
-      id INTEGER PRIMARY KEY,
-      price REAL
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "item" TEXT,
+      "price" REAL
     )
   `);
 
@@ -198,6 +201,53 @@ const getWalletBalanceByUsername = (username) => {
   });
 };
 
+const addOrder = (order) => {
+  return new Promise((resolve, reject) => {
+    db.run('INSERT INTO orders (type, item, amount, price) VALUES (?, ?, ?, ?)', 
+      [order.type, order.item, order.amount, order.price], 
+      (err) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      }
+    );
+  });
+};
+
+const getAllOrders = () => {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM orders', (err, rows) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(rows);
+    });
+  });
+};
+
+const updateMarketPrice = (price) => {
+  return new Promise((resolve, reject) => {
+    db.run('UPDATE market SET price = ? WHERE id = 1', [price], (err) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+};
+
+const getMarketPrice = () => {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT price FROM market WHERE id = 1', (err, row) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(row ? row.price : null);
+    });
+  });
+};
+
 class Block {
   constructor(previousHash, transaction, timestamp = Date.now(), nonce = 0) {
     this.previousHash = previousHash;
@@ -234,4 +284,8 @@ module.exports = {
   getWalletByPublicKey,
   getWalletByUsername,
   getWalletBalanceByUsername,
+  addOrder,
+  getAllOrders,
+  updateMarketPrice,
+  getMarketPrice,
 };

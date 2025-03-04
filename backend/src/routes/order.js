@@ -1,19 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const Blockchain = require('../models/blockchain');
-const db = require('../db');
-
-const blockchain = new Blockchain();
+const db = require('../db'); // Ensure the database module is correctly imported
 
 // Function to calculate the market price
 const calculateMarketPrice = async (totalBuyAmount, totalSellAmount) => {
-  const blockchainParams = blockchain.getBlockchainParams();
+  let marketPrice = 0;
+  const miningMultiplicator = 1.1; // Example multiplicator
 
-  // Base market price calculation
-  let marketPrice = totalBuyAmount / totalSellAmount;
+  if (totalBuyAmount > totalSellAmount) {
+    marketPrice = totalBuyAmount / totalSellAmount;
+  } else {
+    marketPrice = totalSellAmount / totalBuyAmount;
+  }
 
-  // Include mining and block production multiplicator
-  const miningMultiplicator = blockchainParams.currentSupply / blockchainParams.maxSupply;
   marketPrice *= miningMultiplicator;
 
   return marketPrice;
@@ -21,11 +20,8 @@ const calculateMarketPrice = async (totalBuyAmount, totalSellAmount) => {
 
 // Function to update the market price in the database
 const updateMarketPrice = async () => {
-  db.all('SELECT * FROM orders', async (err, rows) => {
-    if (err) {
-      console.error('Error retrieving orders:', err);
-      return;
-    }
+  try {
+    const rows = await db.getAllOrders();
 
     const buyOrders = rows.filter(order => order.type === 'buy');
     const sellOrders = rows.filter(order => order.type === 'sell');
@@ -33,171 +29,70 @@ const updateMarketPrice = async () => {
     const totalBuyAmount = buyOrders.reduce((sum, order) => sum + order.amount, 0);
     const totalSellAmount = sellOrders.reduce((sum, order) => sum + order.amount, 0);
 
-    try {
-      const marketPrice = await calculateMarketPrice(totalBuyAmount, totalSellAmount);
-      db.run('UPDATE market SET price = ? WHERE id = 1', [marketPrice], (err) => {
-        if (err) {
-          console.error('Failed to update market price:', err);
-        } else {
-          console.log('Market price updated:', marketPrice);
-        }
-      });
-    } catch (error) {
-      console.error('Failed to calculate market price:', error);
-    }
-  });
+    const marketPrice = await calculateMarketPrice(totalBuyAmount, totalSellAmount);
+    await db.updateMarketPrice(marketPrice);
+  } catch (err) {
+    console.error('Error updating market price:', err);
+  }
 };
 
-// Endpoint to get the current market price of NodeCoin
-router.get('/market-price', (req, res) => {
-  db.get('SELECT price FROM market WHERE id = 1', (err, row) => {
-    if (err) {
-      console.error('Failed to fetch market price:', err);
-      res.status(500).send('Failed to fetch market price');
-    } else {
-      res.json({ marketPrice: row.price });
-    }
-  });
+// Endpoint to create an order
+router.post('/create', async (req, res) => {
+  const { type, item, amount, price } = req.body;
+
+  try {
+    await db.addOrder({ type, item, amount, price });
+    res.send('Order created successfully');
+  } catch (err) {
+    console.error('Failed to create order:', err);
+    res.status(500).send('Server error');
+  }
 });
 
-// Example endpoint to create an order
-router.post('/create', (req, res) => {
-  const { type, amount, price } = req.body;
-  db.run('INSERT INTO orders (type, amount, price) VALUES (?, ?, ?)', [type, amount, price], (err) => {
-    if (err) {
-      console.error('Failed to create order:', err);
-      res.status(500).send('Failed to create order');
-    } else {
-      // Update the market price after creating a new order
-      updateMarketPrice();
-      res.json({ success: true, message: 'Order created successfully' });
-    }
-  });
+// Endpoint to get all orders
+router.get('/all', async (req, res) => {
+  try {
+    const orders = await db.getAllOrders();
+    res.json(orders);
+  } catch (err) {
+    console.error('Failed to get orders:', err);
+    res.status(500).send('Server error');
+  }
 });
 
-router.post('/buy', (req, res) => {
-  const { username, amount, price } = req.body;
-  console.log(`Buying tokens for username: ${username}, amount: ${amount}, price: ${price}`);
-
-  db.get('SELECT * FROM wallets WHERE username = ?', [username], (err, row) => {
-    if (err) {
-      console.error('Error retrieving wallet:', err);
-      return res.status(500).send('Error retrieving wallet');
-    }
-    if (!row) {
-      console.error('Wallet not found for username:', username);
-      return res.status(404).send('Wallet not found');
-    }
-
-    db.all('SELECT * FROM orders WHERE type = ? AND price <= ? ORDER BY price ASC', ['sell', price], (err, orders) => {
-      if (err) {
-        console.error('Error retrieving sell orders:', err);
-        return res.status(500).send('Error retrieving sell orders');
-      }
-
-      let remainingAmount = amount;
-      for (const order of orders) {
-        if (remainingAmount <= 0) break;
-
-        const orderAmount = Math.min(order.amount, remainingAmount);
-        remainingAmount -= orderAmount;
-
-        db.run('DELETE FROM orders WHERE id = ?', [order.id], (err) => {
-          if (err) {
-            console.error('Error deleting order:', err);
-            return res.status(500).send('Error deleting order');
-          }
-        });
-
-        const newBalance = row.balance + orderAmount;
-        db.run('UPDATE wallets SET balance = ? WHERE username = ?', [newBalance, username], (err) => {
-          if (err) {
-            console.error('Error updating wallet balance:', err);
-            return res.status(500).send('Error updating wallet balance');
-          }
-        });
-      }
-
-      if (remainingAmount > 0) {
-        console.error('Not enough tokens available for purchase');
-        return res.status(400).send('Not enough tokens available for purchase');
-      }
-
-      console.log(`Buy order completed for username: ${username}`);
-      res.send('Buy order completed');
-    });
-  });
+// Endpoint to update market price
+router.post('/update-market-price', async (req, res) => {
+  try {
+    await updateMarketPrice();
+    res.send('Market price updated successfully');
+  } catch (err) {
+    console.error('Failed to update market price:', err);
+    res.status(500).send('Server error');
+  }
 });
 
-router.post('/sell', (req, res) => {
-  const { username, amount, price } = req.body;
-  console.log(`Selling tokens from username: ${username}, amount: ${amount}, price: ${price}`);
-
-  db.get('SELECT * FROM wallets WHERE username = ?', [username], (err, row) => {
-    if (err) {
-      console.error('Error retrieving wallet:', err);
-      return res.status(500).send('Error retrieving wallet');
-    }
-    if (!row) {
-      console.error('Wallet not found for username:', username);
-      return res.status(404).send('Wallet not found');
-    }
-    if (row.balance < amount) {
-      console.error('Insufficient balance in wallet');
-      return res.status(400).send('Insufficient balance in wallet');
-    }
-
-    const newBalance = row.balance - amount;
-    db.run('UPDATE wallets SET balance = ? WHERE username = ?', [newBalance, username], (err) => {
-      if (err) {
-        console.error('Error updating wallet balance:', err);
-        return res.status(500).send('Error updating wallet balance');
-      }
-
-      const order = new Order('sell', amount, price);
-      db.run(
-        'INSERT INTO orders (type, amount, price) VALUES (?, ?, ?)',
-        [order.type, order.amount, order.price],
-        (err) => {
-          if (err) {
-            console.error('Error placing sell order:', err);
-            return res.status(500).send('Error placing sell order');
-          }
-
-          console.log(`Sell order placed for username: ${username}`);
-          res.json(order);
-        }
-      );
-    });
-  });
+// Endpoint to get the current market price
+router.get('/market-price', async (req, res) => {
+  try {
+    const marketPrice = await db.getMarketPrice();
+    res.json({ marketPrice });
+  } catch (err) {
+    console.error('Failed to get market price:', err);
+    res.status(500).send('Server error');
+  }
 });
 
-router.get('/price', (req, res) => {
-  const price = 1;
-  res.send({ price });
+// Endpoint to create a buy order
+router.post('/buy', async (req, res) => {
+  const { item, amount, price } = req.body;
 
-  // db.all('SELECT * FROM order', (err, rows) => {
-  //   if (err) {
-  //     console.log("err");
-  //     res.status(500).send('Error retrieving orders');
-  //   } else {
-  //     const buyOrders = rows.filter(order => order.type === 'buy');
-  //     const sellOrders = rows.filter(order => order.type === 'sell');
-
-  //     const totalBuyAmount = buyOrders.reduce((sum, order) => sum + order.amount, 0);
-  //     const totalSellAmount = sellOrders.reduce((sum, order) => sum + order.amount, 0);
-
-  //     console.log(totalBuyAmount, totalSellAmount);
-
-  //     calculateMarketPrice(totalBuyAmount, totalSellAmount)
-  //       .then(marketPrice => res.json({ marketPrice }))
-  //       .catch(error => {
-  //         // console.error('Failed to calculate market price:', error);
-  //         res.status(500).send('Failed to calculate market price');
-          
-  //       });
-  //   }
-  // });
+  try {
+    await db.addOrder({ type: 'buy', item, amount, price });
+    res.send('Buy order created successfully');
+  } catch (err) {
+    console.error('Failed to create buy order:', err);
+    res.status(500).send('Server error');
+  }
 });
 
 module.exports = router;
