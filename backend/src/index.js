@@ -10,16 +10,19 @@ const walletRoutes = require('./routes/wallet');
 const orderRoutes = require('./routes/order');
 const historyRoutes = require('./routes/history'); // Import the new routes
 const db = require('./db'); // Ensure the database is initialized
+const bodyParser = require('body-parser');
 
 const app = express();
 app.use(cors()); // Enable CORS
 app.use(express.json());
+app.use(bodyParser.json());
 
 const blockchain = new Blockchain();
 const peers = []; // List of peer nodes
 
 // Logging middleware
 app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}, ${req.body}`);
   next();
 });
 
@@ -35,16 +38,31 @@ app.get('/blockchain', (req, res) => {
 });
 
 // Endpoint to add a new block
-app.post('/mine', (req, res) => {
-  const { block } = req.body;
-  const newBlock = new Block(block.previousHash, block.transaction, block.timestamp);
-  newBlock.hash = block.hash;
-  if (blockchain.isChainValid([...blockchain.chain, newBlock])) {
-    blockchain.addBlock(block.transaction);
-    res.send({ added: true });
-  } else {
-    res.send({ added: false });
+app.post('/mine', async (req, res) => {
+  const { data } = req.body;
+
+  if (!data) {
+    return res.status(400).send('Data is missing');
   }
+
+  // Check if the chain is empty and create the genesis block if necessary
+  const chain = await db.getChain();
+  if (chain.length === 0) {
+    const genesisBlock = blockchain.createGenesisBlock();
+    await db.addBlock(genesisBlock);
+  } else {
+    // Add the new block to the chain
+    const newBlock = blockchain.addBlock(data);
+    await db.addBlock(newBlock);
+  }
+
+  // Validate the chain
+  const isValid = blockchain.isChainValid();
+  if (!isValid) {
+    return res.status(400).send('Invalid blockchain');
+  }
+
+  res.send('Block added successfully');
 });
 
 // Endpoint to receive new blocks from other nodes
@@ -54,6 +72,7 @@ app.post('/receive-block', (req, res) => {
   newBlock.hash = block.hash;
 
   if (blockchain.isChainValid([...blockchain.chain, newBlock])) {
+  
     blockchain.addBlock(block.transaction);
     res.send({ added: true });
   } else {
@@ -89,6 +108,12 @@ app.get('/wallet-exists/:publicKey', (req, res) => {
 // Endpoint to get blockchain parameters
 app.get('/blockchain-params', (req, res) => {
   res.send(blockchain.getBlockchainParams());
+});
+
+// Endpoint to get the blockchain
+app.get('/chain', async (req, res) => {
+  const chain = await db.getChain();
+  res.json(chain);
 });
 
 // Error handling middleware

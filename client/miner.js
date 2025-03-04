@@ -8,27 +8,6 @@ class Transaction {
     this.amount = amount;
     this.senderPublicKey = senderPublicKey;
     this.receiverPublicKey = receiverPublicKey;
-    this.signature = '';
-  }
-
-  toString() {
-    return JSON.stringify(this);
-  }
-
-  signTransaction(privateKey) {
-    const sign = crypto.createSign('SHA256');
-    sign.update(this.toString()).end();
-    this.signature = sign.sign(privateKey, 'hex');
-  }
-
-  isValid() {
-    if (!this.signature || this.signature.length === 0) {
-      throw new Error('No signature in this transaction');
-    }
-
-    const verify = crypto.createVerify('SHA256');
-    verify.update(this.toString());
-    return verify.verify(this.senderPublicKey, this.signature, 'hex');
   }
 }
 
@@ -49,20 +28,11 @@ class Block {
   }
 
   mineBlock(difficulty) {
-    const startTime = Date.now();
-    while (!this.hash.startsWith(Array(difficulty + 1).join('0'))) {
+    while (!this.hash.startsWith('0'.repeat(difficulty))) {
       this.nonce++;
       this.hash = this.calculateHash();
     }
-    const endTime = Date.now();
-    const miningTime = (endTime - startTime) / 1000;
-    // console.log(`Block mined: ${this.hash}`);
-    // console.log(`Mining took ${miningTime} seconds`);
-    return miningTime;
-  }
-
-  toString() {
-    return JSON.stringify(this);
+    return Date.now() - this.timestamp;
   }
 }
 
@@ -95,11 +65,8 @@ const getBlockchainParams = async () => {
 };
 
 const notifyMiningTime = async (miningTime) => {
-  try {
-    await axios.post(`${peer}/api/history/mining-time`, { miningTime });
-  } catch (error) {
-    console.error('Failed to notify mining time to backend:', error);
-  }
+  // Implement the function to notify the backend about the mining time
+  console.log('Mining time:', miningTime);
 };
 
 const mineBlock = async (blockchainParams) => {
@@ -117,8 +84,8 @@ const mineBlock = async (blockchainParams) => {
     const difficulty = blockchainParams.difficulty;
     const miningTime = newBlock.mineBlock(difficulty);
 
-    await axios.post(`${peer}/mine`, { block: newBlock });
-    // console.log('Block mined:', newBlock);
+    await axios.post(`${peer}/mine`, { data: newBlock.transaction });
+    console.log(`${peer}/mine`, 'Block mined:', newBlock);
 
     // Notify the backend about the mining time
     await notifyMiningTime(miningTime);

@@ -63,7 +63,7 @@ router.post('/add-funds', (req, res) => {
   });
 });
 
-router.get('/:username', (req, res) => {
+router.get('/get/:username', (req, res) => {
   const { username } = req.params;
   console.log(`Retrieving wallet for username: ${username}`);
 
@@ -81,7 +81,7 @@ router.get('/:username', (req, res) => {
   });
 });
 
-router.get('/:username/balance', (req, res) => {
+router.get('/get/:username/balance', (req, res) => {
   const { username } = req.params;
   console.log(`Retrieving balance for username: ${username}`);
 

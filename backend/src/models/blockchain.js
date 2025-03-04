@@ -1,5 +1,5 @@
-const Block = require('./block');
 const db = require('../db');
+const Block = require('./block');
 
 class Blockchain {
   constructor() {
@@ -18,11 +18,11 @@ class Blockchain {
     return this.chain[this.chain.length - 1];
   }
 
-  addBlock(transaction) {
+  async addBlock(transaction) {
     const previousBlock = this.getLatestBlock();
     const newBlock = new Block(previousBlock.hash, transaction);
     newBlock.mineBlock(this.difficulty);
-    console.log("addBlock")
+
     // Ensure the total supply does not exceed the maximum supply
     if (this.currentSupply + this.miningReward <= this.maxSupply) {
       this.chain.push(newBlock);
@@ -30,30 +30,20 @@ class Blockchain {
 
       // Update the wallet balance for the receiver of the coinbase transaction
       const receiverPublicKey = transaction.receiverPublicKey;
-      console.log( `UPDATE wallets SET balance = balance + ? WHERE publicKey = ?`,
-      )
-      db.run(
-        `UPDATE wallets SET balance = balance + ? WHERE publicKey = ?`,
-        [this.miningReward, receiverPublicKey],
-        (err) => {
-          if (err) {
-            console.error('Failed to update wallet balance:', err);
-          } else {
-            console.log(`Reward added to wallet: ${receiverPublicKey}`);
-          }
-        }
-      );
-    } else {
-      console.log('Maximum supply reached. No more coins can be mined.');
+      const walletExists = await db.walletExists(receiverPublicKey);
+      if (walletExists) {
+        await db.updateWalletBalance(receiverPublicKey, this.miningReward);
+      } else {
+        await db.createWallet(receiverPublicKey, this.miningReward);
+      }
     }
   }
 
-  isChainValid(chain) {
-    
-    for (let i = 1; i < chain.length; i++) {
-      const currentBlock = chain[i];
-      const previousBlock = chain[i - 1];
-      console.log("isChainValid", i, currentBlock.hash, currentBlock.calculateHash())
+  isChainValid() {
+    for (let i = 1; i < this.chain.length; i++) {
+      const currentBlock = this.chain[i];
+      const previousBlock = this.chain[i - 1];
+
       if (currentBlock.hash !== currentBlock.calculateHash()) {
         return false;
       }

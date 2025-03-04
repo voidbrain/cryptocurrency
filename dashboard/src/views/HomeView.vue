@@ -123,7 +123,7 @@ const addFunds = async () => {
 
 const getWallet = async () => {
   try {
-    const response = await axios.get(`/api/wallet/${fromUser.value}`);
+    const response = await axios.get(`/api/wallet/get/${fromUser.value}`);
     console.log('Wallet:', response.data);
   } catch (error) {
     console.error('Error getting wallet:', error);
@@ -132,7 +132,7 @@ const getWallet = async () => {
 
 const getBalance = async () => {
   try {
-    const response = await axios.get(`/api/wallet/${fromUser.value}/balance`);
+    const response = await axios.get(`/api/get/${fromUser.value}/balance`);
     balance.value = response.data.balance;
     console.log('Balance:', response.data);
   } catch (error) {
