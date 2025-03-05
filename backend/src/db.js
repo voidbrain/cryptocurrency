@@ -60,6 +60,7 @@ db.serialize(() => {
       "senderPublicKey" TEXT,
       "receiverPublicKey" TEXT,
       "amount" REAL,
+      "fee" REAL,
       "timestamp" INT
     )
   `);

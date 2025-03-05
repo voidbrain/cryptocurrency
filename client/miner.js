@@ -77,18 +77,18 @@ const notifyMiningTime = async (miningTime) => {
 
 const mineBlock = async (mempoolTransactions) => {
   try {
-    if (mempoolTransactions.length === 0) {
-      console.log('No transactions in mempool to mine');
-      return;
-    }
-
     // Create a coinbase transaction
-    const minerAddress = 'miner_public_key'; // Replace with actual miner's public key
+    const minerAddress = 'alicePublicKey'; // Replace with actual miner's public key
     const reward = 50; // Replace with actual reward
     const coinbaseTransaction = Transaction.createCoinbaseTransaction(minerAddress, reward);
 
-    // Add the coinbase transaction to the beginning of the transactions list
-    mempoolTransactions.unshift(coinbaseTransaction);
+    if (mempoolTransactions.length === 0) {
+      console.log('No transactions in mempool to mine, continuing with coinbase transaction only');
+      mempoolTransactions = [coinbaseTransaction];
+    } else {
+      // Add the coinbase transaction to the beginning of the transactions list
+      mempoolTransactions.unshift(coinbaseTransaction);
+    }
 
     // Create a new block with transactions from the mempool
     const previousHash = 'some_previous_hash'; // Replace with actual previous hash
@@ -119,7 +119,7 @@ const fetchMempoolTransactions = async () => {
 };
 
 // Example usage with Alice's keys
-const alicePublicKey = `MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAztroh5/CC1u39w4xzgVMW6JNMUXshRUgQYCmBqUlx2FDiY3dtQXgWzeaoTYRXY2zTveXwDVogWgAGhDYjQRXj8oqEs1zpAUp4Xr1FqnpWjLQkdxW++MqALk4A/9MELRkqJlSjcnSKBuoomOhfDIgUyLy97X2VsWf2W+Xr1sCrPvl7lMEcFaBqYFotXfWK4IEjNMYNRtdFPbtQPJEkSCEblu6fen9iikmW+Tpu9znpNnaJa0LWbyY4xsRxFKfUjEY24eq+nTqVkyjPSLJrPuQpLfjql5luZfFbg+2qeAPj/jHWCRskTFyqwJdBIsmXqm6PBrW+CAX0JiwhynBG9Jq0QIDAQAB`;
+const alicePublicKey = `key1`;
 
 const startMining = async () => {
   peer = await getPeer();
