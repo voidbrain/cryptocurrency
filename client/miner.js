@@ -10,6 +10,10 @@ class Transaction {
     this.senderPublicKey = senderPublicKey;
     this.receiverPublicKey = receiverPublicKey;
   }
+
+  static createCoinbaseTransaction(minerAddress, reward) {
+    return new Transaction(reward, 0, null, minerAddress);
+  }
 }
 
 class Block {
@@ -77,6 +81,14 @@ const mineBlock = async (mempoolTransactions) => {
       console.log('No transactions in mempool to mine');
       return;
     }
+
+    // Create a coinbase transaction
+    const minerAddress = 'miner_public_key'; // Replace with actual miner's public key
+    const reward = 50; // Replace with actual reward
+    const coinbaseTransaction = Transaction.createCoinbaseTransaction(minerAddress, reward);
+
+    // Add the coinbase transaction to the beginning of the transactions list
+    mempoolTransactions.unshift(coinbaseTransaction);
 
     // Create a new block with transactions from the mempool
     const previousHash = 'some_previous_hash'; // Replace with actual previous hash
