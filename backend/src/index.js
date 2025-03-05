@@ -47,30 +47,26 @@ app.get('/blockchain', async (req, res) => {
 // Endpoint to add a new block
 app.post('/mine', async (req, res) => {
   try {
-    // Get transactions from the mempool
-    const mempoolTransactions = await db.getMempoolTransactions();
-
-    // Create a new block with transactions from the mempool
-    const newBlock = blockchain.createBlock(mempoolTransactions);
+    const { block } = req.body;
 
     // Validate the new block
-    if (!blockchain.isChainValid()) {
+    if (!blockchain.validateBlock(block)) {
       return res.status(400).send('Invalid block');
     }
 
-    // Add the new block to the blockchain
-    blockchain.addBlock(newBlock);
+    // Confirm the new block
+    await blockchain.addBlock(block);
 
     // Save the new block to the database
-    await db.addBlock(newBlock);
+    await db.addBlock(block);
 
     // Clear the mempool
     await db.clearMempool();
 
-    console.log('New block mined:', newBlock);
-    res.send('New block mined');
+    console.log('New block added to the blockchain:', block);
+    res.send('New block added to the blockchain');
   } catch (err) {
-    console.error('Failed to mine block:', err);
+    console.error('Failed to add block to the blockchain:', err);
     res.status(500).send('Server error');
   }
 });

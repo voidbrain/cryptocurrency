@@ -1,4 +1,4 @@
-const db = require('../db');
+const crypto = require('crypto');
 const Block = require('./block');
 const Transaction = require('./transaction');
 
@@ -20,18 +20,21 @@ class Blockchain {
     return this.chain[this.chain.length - 1];
   }
 
-  async addBlock(transactions) {
+  createBlock(transactions) {
     const previousBlock = this.getLatestBlock();
     const newBlock = new Block(previousBlock.hash, transactions);
     newBlock.mineBlock(this.difficulty);
+    return newBlock;
+  }
 
+  async addBlock(block) {
     // Ensure the total supply does not exceed the maximum supply
     if (this.currentSupply + this.miningReward <= this.maxSupply) {
-      this.chain.push(newBlock);
+      this.chain.push(block);
       this.currentSupply += this.miningReward;
 
       // Update the wallet balance for the receiver of the coinbase transaction
-      for (const transaction of transactions) {
+      for (const transaction of block.transactions) {
         const receiverPublicKey = transaction.receiverPublicKey;
         const walletExists = await db.walletExists(receiverPublicKey);
         if (walletExists) {
@@ -91,6 +94,21 @@ class Blockchain {
       maxSupply: this.maxSupply,
       currentSupply: this.currentSupply,
     };
+  }
+
+  validateBlock(block) {
+    const previousBlock = this.getLatestBlock();
+    if (block.previousHash !== previousBlock.hash) {
+      return false;
+    }
+    if (block.hash !== block.calculateHash()) {
+      return false;
+    }
+    return true;
+  }
+
+  confirmBlock(block) {
+    this.chain.push(block);
   }
 }
 
