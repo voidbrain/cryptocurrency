@@ -8,7 +8,7 @@
 curl -X GET http://localhost:3000/blockchain
 ```
 
-- 2 Mine a New Block (WIP)
+- 2 Mine a New Block (OK)
 Assuming you have a block object with the necessary data:
 
 ```sh

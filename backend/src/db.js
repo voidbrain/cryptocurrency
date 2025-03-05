@@ -84,7 +84,6 @@ const getChain = () => {
 };
 
 const addBlock = (block) => {
-  console.log("addBlock", block)
   return new Promise((resolve, reject) => {
     db.run('INSERT INTO chain ("index", "timestamp", "data", "previousHash", "hash", "nonce") VALUES (?, ?, ?, ?, ?, ?)', 
       [block.index, block.timestamp, JSON.stringify(block.data), block.previousHash, block.hash, block.nonce], 
@@ -137,7 +136,6 @@ const all = (query, params = []) => {
       if (err) {
         return reject(err);
       }
-      console.log(query, params, rows)
       resolve(rows);
     });
   });

@@ -21,10 +21,10 @@ const blockchain = new Blockchain();
 const peers = []; // List of peer nodes
 
 // Logging middleware
-// app.use((req, res, next) => {
-//   console.log(`${req.method} ${req.url}, ${req.body}`);
-//   next();
-// });
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.url}, ${req.body}`);
+  next();
+});
 
 app.use('/api/chain', chainRoutes);
 app.use('/api/transaction', transactionRoutes);
@@ -40,7 +40,6 @@ app.get('/blockchain', (req, res) => {
 // Endpoint to add a new block
 app.post('/mine', async (req, res) => {
   const { data } = req.body;
-  console.log("mine: ", data)
   if (!data.timestamp || !data.transaction || !data.previousHash || !data.hash || !data.nonce) {
     return res.status(400).send('Data is missing');
   }
@@ -58,7 +57,7 @@ app.post('/mine', async (req, res) => {
 
   // Validate the chain
   const isValid = blockchain.isChainValid();
-  console.log("isValid", isValid)
+
   if (!isValid) {
     return res.status(400).send('Invalid blockchain');
   }
