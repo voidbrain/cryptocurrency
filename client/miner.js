@@ -4,17 +4,18 @@ const crypto = require('crypto');
 let peer = '';
 
 class Transaction {
-  constructor(amount, senderPublicKey, receiverPublicKey) {
+  constructor(amount, fee, senderPublicKey, receiverPublicKey) {
     this.amount = amount;
+    this.fee = fee;
     this.senderPublicKey = senderPublicKey;
     this.receiverPublicKey = receiverPublicKey;
   }
 }
 
 class Block {
-  constructor(previousHash, transaction, timestamp = Date.now(), nonce = 0) {
+  constructor(previousHash, transactions, timestamp = Date.now(), nonce = 0) {
     this.previousHash = previousHash;
-    this.transaction = transaction;
+    this.transactions = transactions;
     this.timestamp = timestamp;
     this.nonce = nonce;
     this.hash = this.calculateHash();
@@ -23,16 +24,16 @@ class Block {
   calculateHash() {
     return crypto
       .createHash('sha256')
-      .update(this.previousHash + this.timestamp + JSON.stringify(this.transaction) + this.nonce)
+      .update(this.previousHash + this.timestamp + JSON.stringify(this.transactions) + this.nonce)
       .digest('hex');
   }
 
   mineBlock(difficulty) {
-    while (!this.hash.startsWith('0'.repeat(difficulty))) {
+    while (this.hash.substring(0, difficulty) !== Array(difficulty + 1).join('0')) {
       this.nonce++;
       this.hash = this.calculateHash();
     }
-    return Date.now() - this.timestamp;
+    console.log('Block mined:', this.hash);
   }
 }
 
@@ -70,27 +71,38 @@ const notifyMiningTime = async (miningTime) => {
   console.log('Mining time:', miningTime);
 };
 
-const mineBlock = async (blockchainParams) => {
+const mineBlock = async (mempoolTransactions) => {
   try {
-    const response = await axios.get(`${peer}/blockchain`);
-    const blockchain = response.data;
-    const previousBlock = blockchain[blockchain.length - 1];
+    if (mempoolTransactions.length === 0) {
+      console.log('No transactions in mempool to mine');
+      return;
+    }
 
-    // Create a coinbase transaction to reward Alice
-    const coinbaseTransaction = new Transaction(blockchainParams.miningReward, null, alicePublicKey);
+    // Create a new block with transactions from the mempool
+    const previousHash = 'some_previous_hash'; // Replace with actual previous hash
+    const newBlock = new Block(previousHash, mempoolTransactions);
 
-    const newBlock = new Block(previousBlock.hash, coinbaseTransaction);
+    // Mine the new block
+    newBlock.mineBlock(4); // Replace 4 with actual difficulty
 
-    // Set the difficulty level from blockchain parameters
-    const difficulty = blockchainParams.difficulty;
-    const miningTime = newBlock.mineBlock(difficulty);
+    // Send the mined block to the server
+    const mineResponse = await axios.post('http://localhost:3000/mine', { block: newBlock });
+    console.log(mineResponse.data);
+  } catch (err) {
+    console.error('Failed to mine block:', err);
+  }
+};
 
-    await axios.post(`${peer}/mine`, { data: newBlock });
+const fetchMempoolTransactions = async () => {
+  try {
+    // Request mempool transactions from the server
+    const response = await axios.get('http://localhost:3000/mempool');
+    const mempoolTransactions = response.data;
 
-    // Notify the backend about the mining time
-    await notifyMiningTime(miningTime);
-  } catch (error) {
-    console.error('Failed to mine block:', error);
+    // Call the mineBlock function with the mempool transactions
+    await mineBlock(mempoolTransactions);
+  } catch (err) {
+    console.error('Failed to fetch mempool transactions:', err);
   }
 };
 
@@ -106,7 +118,7 @@ const startMining = async () => {
   }
 
   while (true) {
-    await mineBlock(blockchainParams);
+    await fetchMempoolTransactions();
   }
 };
 

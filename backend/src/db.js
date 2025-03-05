@@ -71,6 +71,7 @@ db.serialize(() => {
       "senderPublicKey" TEXT,
       "receiverPublicKey" TEXT,
       "amount" REAL,
+      "fee" REAL,
       "signature" TEXT,
       "data" TEXT
     )
@@ -98,7 +99,7 @@ const getChain = () => {
 const addBlock = (block) => {
   return new Promise((resolve, reject) => {
     db.run('INSERT INTO chain ("index", "timestamp", "data", "previousHash", "hash", "nonce") VALUES (?, ?, ?, ?, ?, ?)', 
-      [block.index, block.timestamp, JSON.stringify(block.data), block.previousHash, block.hash, block.nonce], 
+      [block.index, block.timestamp, JSON.stringify(block.transactions), block.previousHash, block.hash, block.nonce], 
       (err) => {
         if (err) {
           return reject(err);
@@ -260,8 +261,8 @@ const getMarketPrice = () => {
 
 const addTransactionToMempool = (transaction) => {
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO mempool (senderPublicKey, receiverPublicKey, amount, signature, data) VALUES (?, ?, ?, ?, ?)', 
-      [transaction.senderPublicKey, transaction.receiverPublicKey, transaction.amount, transaction.signature, transaction.data], 
+    db.run('INSERT INTO mempool (senderPublicKey, receiverPublicKey, amount, fee, signature, data) VALUES (?, ?, ?, ?, ?, ?)', 
+      [transaction.senderPublicKey, transaction.receiverPublicKey, transaction.amount, transaction.fee, transaction.signature, transaction.data], 
       (err) => {
         if (err) {
           return reject(err);
@@ -274,7 +275,7 @@ const addTransactionToMempool = (transaction) => {
 
 const getMempoolTransactions = () => {
   return new Promise((resolve, reject) => {
-    db.all('SELECT * FROM mempool', (err, rows) => {
+    db.all('SELECT * FROM mempool ORDER BY fee DESC LIMIT 10', (err, rows) => {
       if (err) {
         return reject(err);
       }

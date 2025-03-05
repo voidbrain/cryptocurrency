@@ -34,27 +34,40 @@ app.use('/api/order', orderRoutes);
 app.use('/api/history', historyRoutes);
 
 // Endpoint to get the blockchain
-app.get('/blockchain', (req, res) => {
-  res.send(blockchain.chain);
+app.get('/blockchain', async (req, res) => {
+  try {
+    const blocks = await db.getBlocks();
+    res.json(blocks);
+  } catch (err) {
+    console.error('Failed to get blockchain:', err);
+    res.status(500).send('Server error');
+  }
 });
 
 // Endpoint to add a new block
 app.post('/mine', async (req, res) => {
   try {
+    // Get transactions from the mempool
+    const mempoolTransactions = await db.getMempoolTransactions();
+
     // Create a new block with transactions from the mempool
-    const newBlock = blockchain.addBlock(mempool);
+    const newBlock = blockchain.createBlock(mempoolTransactions);
 
     // Validate the new block
-    if (!validateBlock(newBlock)) {
+    if (!blockchain.isChainValid()) {
       return res.status(400).send('Invalid block');
     }
 
     // Add the new block to the blockchain
     blockchain.addBlock(newBlock);
 
-    // Clear the mempool
-    mempool.length = 0;
+    // Save the new block to the database
+    await db.addBlock(newBlock);
 
+    // Clear the mempool
+    await db.clearMempool();
+
+    console.log('New block mined:', newBlock);
     res.send('New block mined');
   } catch (err) {
     console.error('Failed to mine block:', err);
@@ -98,13 +111,37 @@ app.get('/chain', async (req, res) => {
 });
 
 // Endpoint to add a transaction to the mempool
-app.post('/transaction', (req, res) => {
-  const { senderPublicKey, receiverPublicKey, amount, signature, data } = req.body;
+app.post('/transaction', async (req, res) => {
+  const { senderPublicKey, receiverPublicKey, amount, fee, signature, data } = req.body;
 
-  // Add transaction to mempool
-  mempool.push({ senderPublicKey, receiverPublicKey, amount, signature, data });
-  console.log('Transaction added to mempool:', { senderPublicKey, receiverPublicKey, amount, signature, data });
-  res.send('Transaction added to mempool');
+  try {
+    const transaction = new Transaction(amount, fee, senderPublicKey, receiverPublicKey);
+
+    // Verify the transaction
+    if (!transaction.isValid()) {
+      return res.status(400).send('Invalid transaction');
+    }
+
+    // Add transaction to mempool
+    blockchain.addTransaction(transaction);
+    await db.addTransactionToMempool(transaction);
+    console.log('Transaction added to mempool:', transaction);
+    res.send('Transaction added to mempool');
+  } catch (err) {
+    console.error('Failed to add transaction to mempool:', err);
+    res.status(500).send('Server error');
+  }
+});
+
+// Endpoint to get mempool transactions ordered by fee and limited to 10
+app.get('/mempool', async (req, res) => {
+  try {
+    const mempoolTransactions = await db.getMempoolTransactions();
+    res.json(mempoolTransactions);
+  } catch (err) {
+    console.error('Failed to get mempool transactions:', err);
+    res.status(500).send('Server error');
+  }
 });
 
 // Function to validate a block
