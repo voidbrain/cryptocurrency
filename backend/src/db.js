@@ -64,6 +64,18 @@ db.serialize(() => {
     )
   `);
 
+  // Create the mempool table if it doesn't exist
+  db.run(`
+    CREATE TABLE IF NOT EXISTS mempool (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "senderPublicKey" TEXT,
+      "receiverPublicKey" TEXT,
+      "amount" REAL,
+      "signature" TEXT,
+      "data" TEXT
+    )
+  `);
+
   // Initialize the market table with a default value
   db.run(`
     INSERT INTO market (id, price) VALUES (1, 0.0)
@@ -143,7 +155,7 @@ const all = (query, params = []) => {
 
 const addTransaction = (transaction) => {
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO transactions (senderPublicKey, receiverPublicKey, amount, timestamp) VALUES (?, ?, ?, ?)', 
+    db.run('INSERT INTO transactions (senderPublicKey, receiverPublicKey, amount, timestamp) VALUES (?, ?, ?, ?, ?)', 
       [transaction.senderPublicKey, transaction.receiverPublicKey, transaction.amount, transaction.timestamp], 
       (err) => {
         if (err) {
@@ -246,6 +258,42 @@ const getMarketPrice = () => {
   });
 };
 
+const addTransactionToMempool = (transaction) => {
+  return new Promise((resolve, reject) => {
+    db.run('INSERT INTO mempool (senderPublicKey, receiverPublicKey, amount, signature, data) VALUES (?, ?, ?, ?, ?)', 
+      [transaction.senderPublicKey, transaction.receiverPublicKey, transaction.amount, transaction.signature, transaction.data], 
+      (err) => {
+        if (err) {
+          return reject(err);
+        }
+        resolve();
+      }
+    );
+  });
+};
+
+const getMempoolTransactions = () => {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM mempool', (err, rows) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(rows);
+    });
+  });
+};
+
+const clearMempool = () => {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM mempool', (err) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+};
+
 class Block {
   constructor(previousHash, transaction, timestamp = Date.now(), nonce = 0) {
     this.previousHash = previousHash;
@@ -286,4 +334,7 @@ module.exports = {
   getAllOrders,
   updateMarketPrice,
   getMarketPrice,
+  addTransactionToMempool,
+  getMempoolTransactions,
+  clearMempool,
 };

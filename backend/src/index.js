@@ -19,12 +19,13 @@ app.use(bodyParser.json());
 
 const blockchain = new Blockchain();
 const peers = []; // List of peer nodes
+const mempool = []; // Mempool for transactions
 
 // Logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.url}, ${req.body}`);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log(`${req.method} ${req.url}, ${req.body}`);
+//   next();
+// });
 
 app.use('/api/chain', chainRoutes);
 app.use('/api/transaction', transactionRoutes);
@@ -39,30 +40,26 @@ app.get('/blockchain', (req, res) => {
 
 // Endpoint to add a new block
 app.post('/mine', async (req, res) => {
-  const { data } = req.body;
-  if (!data.timestamp || !data.transaction || !data.previousHash || !data.hash || !data.nonce) {
-    return res.status(400).send('Data is missing');
-  }
+  try {
+    // Create a new block with transactions from the mempool
+    const newBlock = blockchain.addBlock(mempool);
 
-  // Check if the chain is empty and create the genesis block if necessary
-  const chain = await db.getChain();
-  if (chain.length === 0) {
-    const genesisBlock = blockchain.createGenesisBlock();
-    await db.addBlock(genesisBlock);
-  } else {
-    // Add the new block to the chain
-    const newBlock = blockchain.addBlock(data);
-    await db.addBlock(newBlock);
-  }
+    // Validate the new block
+    if (!validateBlock(newBlock)) {
+      return res.status(400).send('Invalid block');
+    }
 
-  // Validate the chain
-  const isValid = blockchain.isChainValid();
+    // Add the new block to the blockchain
+    blockchain.addBlock(newBlock);
 
-  if (!isValid) {
-    return res.status(400).send('Invalid blockchain');
+    // Clear the mempool
+    mempool.length = 0;
+
+    res.send('New block mined');
+  } catch (err) {
+    console.error('Failed to mine block:', err);
+    res.status(500).send('Server error');
   }
-  console.log("Block added successfully")
-  res.send('Block added successfully');
 });
 
 // Endpoint to receive new blocks from other nodes
@@ -99,6 +96,23 @@ app.get('/chain', async (req, res) => {
   const chain = await db.getChain();
   res.json(chain);
 });
+
+// Endpoint to add a transaction to the mempool
+app.post('/transaction', (req, res) => {
+  const { senderPublicKey, receiverPublicKey, amount, signature, data } = req.body;
+
+  // Add transaction to mempool
+  mempool.push({ senderPublicKey, receiverPublicKey, amount, signature, data });
+  console.log('Transaction added to mempool:', { senderPublicKey, receiverPublicKey, amount, signature, data });
+  res.send('Transaction added to mempool');
+});
+
+// Function to validate a block
+const validateBlock = (block) => {
+  // Implement your block validation logic here
+  // For example, you can check the block's hash, previous hash, transactions, etc.
+  return true; // Return true if the block is valid, otherwise return false
+};
 
 // Error handling middleware
 app.use((err, req, res, next) => {
