@@ -33,31 +33,22 @@ services:
     networks:
       - cryptonetwork
 
-  # blockchain-server-1:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "3001:3000"
-  #   environment:
-  #     - NODE_ENV=development
-  #     - PORT=3001
-  #     - DOMAIN=blockchain-server-1
-  #   networks:
-  #     - cryptonetwork
-
-  # blockchain-server-2:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "3002:3000"
-  #   environment:
-  #     - NODE_ENV=development
-  #     - PORT=3002
-  #     - DOMAIN=blockchain-server-2
-  #   networks:
-  #     - cryptonetwork
+  backend2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - '3002:3000'
+    volumes:
+      - ./backend/src:/app/src
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - P2PPORT=6000
+      - DOMAIN=backend
+    
+    networks:
+      - cryptonetwork
 
   miner:
     build:

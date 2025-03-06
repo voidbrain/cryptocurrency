@@ -125,9 +125,5 @@ const fetchMempoolTransactions = async () => {
   }
 };
 
-// Start the P2P client and connect to peers
-connectToPeer({ host: 'localhost', port: 6001 });
-connectToPeer({ host: 'localhost', port: 6002 });
-
 // Call the fetchMempoolTransactions function to start mining
 fetchMempoolTransactions();
