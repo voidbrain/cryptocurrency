@@ -4,7 +4,6 @@ Si ipotizza lo sviluppo di una crypto valuta (per comodità da ora nominata Node
 
 Il sistema è composto da:
 
-- (almeno uno) Central Registry Server: si occupa di tener aggiornato l'elenco di Server di mining.
 - (almeno uno) Mining Server: accetta transazioni e blocchi, effettua una validazione sui blocchi, mette a disposizione di miner, frontend e di altri Mining Server. Conserva in database la blockchain, pool, transazioni.
 - (almeno uno) Client Miner: Associato ad un wallet, si occupa di minare nuovi blocchi e li sottopone ad un server per la validazione. Viene ricompensato in base alla fee delle transazioni presenti nel blocco + ricompensa coinbase.
 - frontend utente: permette di generare un nuovo wallet, caricare (acquistare), vendere (tbd) NodeCoin ed inviarli ad un altro utente.
@@ -23,7 +22,7 @@ Ogni blocco prevede un parametro Difficulty e Nonce, necessari per il Proof-of-W
 Difficulty target – The required difficulty level for mining.
 Nonce – A variable miners adjust to find a valid hash.
 
-I nodi utilizzano un protocollo di broadcast P2P per inviare blocchi e transazioni a tutti gli altri nodi interessati.
+I nodi utilizzano un protocollo di broadcast P2P per inviare blocchi e transazioni a tutti gli altri nodi interessati. In questo modo la lista di nodi è costantemente aggiornata.
 
 ## Market share
 
