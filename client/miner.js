@@ -1,4 +1,5 @@
 const axios = require('axios');
+const net = require('net');
 const crypto = require('crypto');
 
 let peer = '';
@@ -41,44 +42,48 @@ class Block {
   }
 }
 
-const getPeer = async () => {
-  try {
-    const response = await axios.get('http://central-registry:4000/peers');
-    const peers = response.data.peers;
-    if (peers.length === 0) {
-      console.error('No peers available to mine block');
-      return;
+const peers = []; // List of peer nodes
+
+// Function to connect to a peer
+const connectToPeer = (peer) => {
+  const client = new net.Socket();
+  client.connect(peer.port, peer.host, () => {
+    console.log(`Connected to peer: ${peer.host}:${peer.port}`);
+    peers.push(client);
+    // Notify the peer about this miner
+    client.write(JSON.stringify({ type: 'new_peer', data: { host: 'localhost', port: 6000 } }));
+  });
+
+  client.on('data', (data) => {
+    console.log(`Received data from peer: ${data}`);
+    // Handle received data
+  });
+
+  client.on('close', () => {
+    console.log(`Connection to peer closed: ${peer.host}:${peer.port}`);
+    const index = peers.indexOf(client);
+    if (index > -1) {
+      peers.splice(index, 1);
     }
-  
-    // Choose a random peer to mine the block
-    peer = peers[Math.floor(Math.random() * peers.length)];
-    return peer;
-  } catch (error) {
-    console.error('Failed to get peers from central registry:', error);
-    return [];
-  }
+  });
+
+  client.on('error', (err) => {
+    console.error(`Error connecting to peer: ${err.message}`);
+  });
 };
 
-const getBlockchainParams = async () => {
-  try {
-    const response = await axios.get(`${peer}/blockchain-params`);
-    console.log('Blockchain parameters:', response.data, " Peer:", peer);
-    return response.data;
-  } catch (error) {
-    console.error('Failed to get blockchain parameters:', error);
-    return null;
-  }
+// Function to broadcast a message to all connected peers
+const broadcast = (message) => {
+  peers.forEach((peer) => {
+    peer.write(JSON.stringify(message));
+  });
 };
 
-const notifyMiningTime = async (miningTime) => {
-  // Implement the function to notify the backend about the mining time
-  console.log('Mining time:', miningTime);
-};
-
+// Function to mine a block
 const mineBlock = async (mempoolTransactions) => {
   try {
     // Create a coinbase transaction
-    const minerAddress = 'alicePublicKey'; // Replace with actual miner's public key
+    const minerAddress = 'miner_public_key'; // Replace with actual miner's public key
     const reward = 50; // Replace with actual reward
     const coinbaseTransaction = Transaction.createCoinbaseTransaction(minerAddress, reward);
 
@@ -97,17 +102,19 @@ const mineBlock = async (mempoolTransactions) => {
     // Mine the new block
     newBlock.mineBlock(4); // Replace 4 with actual difficulty
 
-    // Send the mined block to the server
-    const mineResponse = await axios.post('http://localhost:3000/mine', { block: newBlock });
-    console.log(mineResponse.data);
+    // Broadcast the mined block to all peers
+    broadcast({ type: 'new_block', data: newBlock });
+
+    console.log('New block mined and broadcasted:', newBlock);
   } catch (err) {
     console.error('Failed to mine block:', err);
   }
 };
 
+// Function to fetch mempool transactions from a peer
 const fetchMempoolTransactions = async () => {
   try {
-    // Request mempool transactions from the server
+    // Request mempool transactions from a peer
     const response = await axios.get('http://localhost:3000/mempool');
     const mempoolTransactions = response.data;
 
@@ -118,20 +125,9 @@ const fetchMempoolTransactions = async () => {
   }
 };
 
-// Example usage with Alice's keys
-const alicePublicKey = `key1`;
+// Start the P2P client and connect to peers
+connectToPeer({ host: 'localhost', port: 6001 });
+connectToPeer({ host: 'localhost', port: 6002 });
 
-const startMining = async () => {
-  peer = await getPeer();
-  const blockchainParams = await getBlockchainParams();
-  if (!blockchainParams) {
-    console.error('Failed to get blockchain parameters. Mining aborted.');
-    return;
-  }
-
-  while (true) {
-    await fetchMempoolTransactions();
-  }
-};
-
-startMining();
+// Call the fetchMempoolTransactions function to start mining
+fetchMempoolTransactions();

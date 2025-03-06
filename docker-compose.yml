@@ -12,8 +12,7 @@ services:
       - NODE_ENV=development
       - PORT=80
       - DOMAIN=frontend
-    depends_on:
-      - central-registry
+    
     networks:
       - cryptonetwork
 
@@ -29,21 +28,7 @@ services:
       - NODE_ENV=development
       - PORT=3000
       - DOMAIN=backend
-    depends_on:
-      - central-registry
-    networks:
-      - cryptonetwork
-
-  central-registry:
-    build:
-      context: ./central-registry
-      dockerfile: Dockerfile
-    ports:
-      - "4000:4000"
-    environment:
-      - NODE_ENV=development
-      - PORT=4000
-      - DOMAIN=central-registry
+    
     networks:
       - cryptonetwork
 
@@ -53,8 +38,6 @@ services:
   #     dockerfile: Dockerfile
   #   ports:
   #     - "3001:3000"
-  #   depends_on:
-  #     - central-registry
   #   environment:
   #     - NODE_ENV=development
   #     - PORT=3001
@@ -68,8 +51,6 @@ services:
   #     dockerfile: Dockerfile
   #   ports:
   #     - "3002:3000"
-  #   depends_on:
-  #     - central-registry
   #   environment:
   #     - NODE_ENV=development
   #     - PORT=3002
@@ -83,8 +64,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3005:3005"
-    depends_on:
-      - central-registry
+    
     environment:
       - NODE_ENV=development
       - PORT=3005
@@ -105,8 +85,7 @@ services:
       - NODE_ENV=development
       - DOMAIN=dashboard
       - PORT=80
-    depends_on:
-      - central-registry
+    
     networks:
       - cryptonetwork
     

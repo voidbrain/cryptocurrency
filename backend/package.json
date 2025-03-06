@@ -21,6 +21,8 @@
   "license": "ISC",
   "devDependencies": {
     "@types/axios": "^0.9.36",
+    "@types/node": "^22.13.9",
+    "@types/socket.io-client": "^1.4.36",
     "chai": "^5.2.0",
     "chai-http": "^4.3.0",
     "mocha": "^11.1.0"

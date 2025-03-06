@@ -2,8 +2,10 @@ import axios from 'axios';
 
 export async function getPeer() {
   try {
-    const response = await axios.get('http://central-registry:4000/peers');
+    // TODO - Fetch peers from the backend
+    const response = <any>[];
     const peers = response.data.peers;
+
     if (peers.length === 0) {
       console.error('No peers available to mine block');
       return;

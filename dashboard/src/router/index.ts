@@ -18,8 +18,10 @@ const router = createRouter({
 
 const fetchPeers = async () => {
   try {
-    const response = await axios.get('http://central-registry:4000/peers');
-    return response.data.peers;
+    // TODO - Fetch peers from the backend
+    const response = <any>[];
+    const peers = response.data.peers;
+
   } catch (error) {
     console.error('Failed to get peers from central registry:', error);
     return [];

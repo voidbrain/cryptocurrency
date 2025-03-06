@@ -69,20 +69,16 @@ curl -X POST http://localhost:3000/register-peer \
 curl -X GET http://localhost:3000/api/wallet/exists/key1
 ```
 
-- 6 Get the List of Peers from the Central Registry (OK)
+- 6 Get the List of Peers (TBD)
 
 ```sh
-curl -X GET http://central-registry:4000/peers
+
 ```
 
-- 7 Register a New Peer with the Central Registry (OK)
+- 7 Register a New Peer (TBD)
 
 ```sh
-curl -X POST http://central-registry:4000/register-peer \
-  -H "Content-Type: application/json" \
-  -d '{
-    "peer": "http://new-peer-address:3000"
-  }'
+
 ```
 
 - 8 Get Blockchain Parameters (OK)
