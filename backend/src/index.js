@@ -16,6 +16,9 @@ app.use(cors()); // Enable CORS
 app.use(express.json());
 app.use(bodyParser.json());
 
+const PORT = process.env.PORT || 3001;
+const p2pPort = process.env.P2PPORT || 6001; 
+
 const blockchain = new Blockchain();
 const peers = []; // List of peer nodes
 const mempool = []; // Mempool for transactions
@@ -27,7 +30,7 @@ const connectToPeer = (peer) => {
     console.log(`Connected to peer: ${peer.host}:${peer.port}`);
     peers.push(client);
     // Notify the peer about this server
-    client.write(JSON.stringify({ type: 'new_peer', data: { host: 'localhost', port: 6000 } }));
+    client.write(JSON.stringify({ type: 'new_peer', data: { host: 'localhost', port: p2pPort } }));
   });
 
   client.on('data', (data) => {
@@ -87,11 +90,7 @@ const broadcast = (message) => {
 };
 
 // Start the P2P server on a specific port
-startP2PServer(6000);
-
-// Connect to other peers (example)
-connectToPeer({ host: 'localhost', port: 6001 });
-connectToPeer({ host: 'localhost', port: 6002 });
+startP2PServer(p2pPort);
 
 // Endpoint to create and broadcast a transaction
 app.post('/transaction', async (req, res) => {
@@ -166,7 +165,6 @@ app.get('/blockchain', async (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
