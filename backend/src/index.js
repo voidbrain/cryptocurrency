@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const net = require('net');
+const fs = require('fs');
+const path = require('path');
 const Blockchain = require('./models/blockchain');
 const Block = require('./models/block');
 const chainRoutes = require('./routes/chain');
@@ -94,15 +96,41 @@ const connectToPeer = (peer) => {
   });
 };
 
-// Connect to a predefined peer (example)
-const connectToPredefinedPeer = async () => {
+// Function to connect to predefined peers from JSON file
+const connectToPredefinedPeers = async () => {
   try {
-    await connectToPeer({ host: 'localhost', port: 6001 });
-    console.log('Connected to predefined peer');
+    const peersFilePath = path.join(__dirname, '../data/peers_list.json');
+    const peersData = fs.readFileSync(peersFilePath);
+    const predefinedPeers = JSON.parse(peersData);
+
+    for (const peer of predefinedPeers) {
+      try {
+        await connectToPeer(peer);
+      } catch (err) {
+        console.error(`Failed to connect to peer ${peer.host}:${peer.port}:`, err);
+      }
+    }
   } catch (err) {
-    console.error('Failed to connect to predefined peer:', err);
+    console.error('Failed to read predefined peers:', err);
   }
 };
+
+connectToPredefinedPeers();
+
+// Endpoint to update the list of peers
+webServer.post('/update-peers', (req, res) => {
+  const newPeers = req.body.peers;
+
+  if (!Array.isArray(newPeers)) {
+    return res.status(400).send('Invalid peers format');
+  }
+
+  const peersFilePath = path.join(__dirname, 'peers.json');
+  fs.writeFileSync(peersFilePath, JSON.stringify(newPeers, null, 2));
+  console.log('Updated peers list:', newPeers);
+
+  res.send('Peers list updated');
+});
 
 // Endpoint to create and broadcast a transaction
 webServer.post('/transaction', async (req, res) => {
@@ -182,5 +210,5 @@ webServer.listen(webPORT, () => {
 });
 
 // Start the P2P server on a specific port
+connectToPredefinedPeers();
 startP2PServer(p2pPORT);
-// connectToPredefinedPeer();

@@ -14,7 +14,7 @@ services:
   #     - DOMAIN=frontend
     
   #   networks:
-  #     - cryptonetwork
+  #     - p2p-network
 
   backend:
     build:
@@ -22,6 +22,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - '3001:3001'
+      - '6001:6001'
     volumes:
       - ./backend/src:/app/src
     environment:
@@ -29,9 +30,9 @@ services:
       - PORT=3001
       - P2PPORT=6001
       - DOMAIN=backend
-    
     networks:
-      - cryptonetwork
+      p2p-network:
+        ipv4_address: 172.20.0.2
 
   backend2:
     build:
@@ -39,32 +40,34 @@ services:
       dockerfile: Dockerfile
     ports:
       - '3002:3002'
+      - '6002:6002'
     volumes:
-      - ./backend/src:/app/src
-    depends_on:
-      - backend
+      - ./backend2/src:/app/src
     environment:
       - NODE_ENV=development
       - PORT=3002
       - P2PPORT=6002
       - DOMAIN=backend2
-    
     networks:
-      - cryptonetwork
+      p2p-network:
+        ipv4_address: 172.20.0.3
 
-  # miner:
-  #   build:
-  #     context: ./client
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "3005:3005"
+  miner:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3005"
+      - "6005:6005"
     
-  #   environment:
-  #     - NODE_ENV=development
-  #     - PORT=3005
-  #     - DOMAIN=localhost
-  #   networks:
-  #     - cryptonetwork
+    environment:
+      - NODE_ENV=development
+      - PORT=3005
+      - P2PPORT=6005
+      - DOMAIN=miner
+    networks:
+      p2p-network:
+        ipv4_address: 172.20.0.5
 
   # dashboard:
   #   build:
@@ -81,9 +84,12 @@ services:
   #     - PORT=80
     
   #   networks:
-  #     - cryptonetwork
+  #     - p2p-network
     
 
 networks:
-  cryptonetwork:
+  p2p-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

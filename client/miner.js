@@ -140,8 +140,8 @@ const fetchPeers = async () => {
     // Example predefined list of peers
     const predefinedPeers = [
       { host: 'localhost', port: 6000 },
-      { host: 'localhost', port: 6001 },
-      { host: 'localhost', port: 6002 },
+      { host: '172.20.0.2', port: 6001 },
+      { host: '172.20.0.3', port: 6002 },
     ];
 
     // Connect to each peer in the predefined list
