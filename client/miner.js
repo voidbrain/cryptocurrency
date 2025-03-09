@@ -2,8 +2,6 @@ const axios = require('axios');
 const net = require('net');
 const crypto = require('crypto');
 
-let peer = '';
-
 class Transaction {
   constructor(amount, fee, senderPublicKey, receiverPublicKey) {
     this.amount = amount;
@@ -39,6 +37,7 @@ class Block {
       this.hash = this.calculateHash();
     }
     console.log('Block mined:', this.hash);
+    return Date.now() - this.timestamp;
   }
 }
 
@@ -46,29 +45,33 @@ const peers = []; // List of peer nodes
 
 // Function to connect to a peer
 const connectToPeer = (peer) => {
-  const client = new net.Socket();
-  client.connect(peer.port, peer.host, () => {
-    console.log(`Connected to peer: ${peer.host}:${peer.port}`);
-    peers.push(client);
-    // Notify the peer about this miner
-    client.write(JSON.stringify({ type: 'new_peer', data: { host: 'localhost', port: 6000 } }));
-  });
+  return new Promise((resolve, reject) => {
+    const client = new net.Socket();
+    client.connect(peer.port, peer.host, () => {
+      console.log(`Connected to peer: ${peer.host}:${peer.port}`);
+      peers.push(client);
+      // Notify the peer about this miner
+      client.write(JSON.stringify({ type: 'new_peer', data: { host: 'localhost', port: 6000 } }));
+      resolve();
+    });
 
-  client.on('data', (data) => {
-    console.log(`Received data from peer: ${data}`);
-    // Handle received data
-  });
+    client.on('data', (data) => {
+      console.log(`Received data from peer: ${data}`);
+      // Handle received data
+    });
 
-  client.on('close', () => {
-    console.log(`Connection to peer closed: ${peer.host}:${peer.port}`);
-    const index = peers.indexOf(client);
-    if (index > -1) {
-      peers.splice(index, 1);
-    }
-  });
+    client.on('close', () => {
+      console.log(`Connection to peer closed: ${peer.host}:${peer.port}`);
+      const index = peers.indexOf(client);
+      if (index > -1) {
+        peers.splice(index, 1);
+      }
+    });
 
-  client.on('error', (err) => {
-    console.error(`Error connecting to peer: ${err.message}`);
+    client.on('error', (err) => {
+      console.error(`Error connecting to peer: ${err.message}`);
+      reject(err);
+    });
   });
 };
 
@@ -114,8 +117,14 @@ const mineBlock = async (mempoolTransactions) => {
 // Function to fetch mempool transactions from a peer
 const fetchMempoolTransactions = async () => {
   try {
-    // Request mempool transactions from a peer
-    const response = await axios.get('http://localhost:3000/mempool');
+    // Assuming the first peer in the list is the one to fetch mempool transactions from
+    const peer = peers[0];
+    if (!peer) {
+      throw new Error('No peers available to fetch mempool transactions');
+    }
+
+    // Request mempool transactions from the peer
+    const response = await axios.get(`http://${peer.remoteAddress}:${peer.remotePort}/mempool`);
     const mempoolTransactions = response.data;
 
     // Call the mineBlock function with the mempool transactions
@@ -125,5 +134,63 @@ const fetchMempoolTransactions = async () => {
   }
 };
 
-// Call the fetchMempoolTransactions function to start mining
-fetchMempoolTransactions();
+// Function to fetch peers from a known peer or a predefined list
+const fetchPeers = async () => {
+  try {
+    // Example predefined list of peers
+    const predefinedPeers = [
+      { host: 'localhost', port: 6000 },
+      { host: 'localhost', port: 6001 },
+      { host: 'localhost', port: 6002 },
+    ];
+
+    // Connect to each peer in the predefined list
+    for (const peer of predefinedPeers) {
+      try {
+        await connectToPeer(peer);
+      } catch (err) {
+        console.error(`Failed to connect to peer ${peer.host}:${peer.port}: ${err.message}`);
+      }
+    }
+
+    // Fetch updated list of peers from one of the connected peers
+    if (peers.length > 0) {
+      await fetchPeersFromAPI(predefinedPeers[0]);
+    }
+  } catch (err) {
+    console.error('Failed to fetch peers:', err);
+  }
+};
+
+// Function to fetch peers from a peer's API
+const fetchPeersFromAPI = async (peer) => {
+  try {
+    const response = await axios.get(`http://${peer.host}:${peer.port}/peers`);
+    const peerList = response.data;
+
+    // Connect to each peer in the updated list
+    for (const newPeer of peerList) {
+      if (!peers.some(p => p.remoteAddress === newPeer.host && p.remotePort === newPeer.port)) {
+        try {
+          await connectToPeer(newPeer);
+        } catch (err) {
+          console.error(`Failed to connect to peer ${newPeer.host}:${newPeer.port}: ${err.message}`);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch peers from API:', err);
+  }
+};
+
+// Start the P2P client, connect to peers, and fetch mempool transactions
+const startMining = async () => {
+  try {
+    await fetchPeers();
+    await fetchMempoolTransactions();
+  } catch (err) {
+    console.error('Failed to start mining:', err);
+  }
+};
+
+startMining();

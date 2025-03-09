@@ -11,49 +11,21 @@ const historyRoutes = require('./routes/history'); // Import the new routes
 const db = require('./db'); // Ensure the database is initialized
 const bodyParser = require('body-parser');
 
-const app = express();
-app.use(cors()); // Enable CORS
-app.use(express.json());
-app.use(bodyParser.json());
+const webServer = express();
+webServer.use(cors()); // Enable CORS
+webServer.use(express.json());
+webServer.use(bodyParser.json());
 
-const PORT = process.env.PORT || 3001;
-const p2pPort = process.env.P2PPORT || 6001; 
+const webPORT = process.env.PORT || 3000;
+const p2pPORT = process.env.P2PPORT || 6000;
 
 const blockchain = new Blockchain();
 const peers = []; // List of peer nodes
 const mempool = []; // Mempool for transactions
 
-// Function to connect to a peer
-const connectToPeer = (peer) => {
-  const client = new net.Socket();
-  client.connect(peer.port, peer.host, () => {
-    console.log(`Connected to peer: ${peer.host}:${peer.port}`);
-    peers.push(client);
-    // Notify the peer about this server
-    client.write(JSON.stringify({ type: 'new_peer', data: { host: 'localhost', port: p2pPort } }));
-  });
-
-  client.on('data', (data) => {
-    console.log(`Received data from peer: ${data}`);
-    // Handle received data
-  });
-
-  client.on('close', () => {
-    console.log(`Connection to peer closed: ${peer.host}:${peer.port}`);
-    const index = peers.indexOf(client);
-    if (index > -1) {
-      peers.splice(index, 1);
-    }
-  });
-
-  client.on('error', (err) => {
-    console.error(`Error connecting to peer: ${err.message}`);
-  });
-};
-
 // Function to start the P2P server
 const startP2PServer = (port) => {
-  const server = net.createServer((socket) => {
+  const p2pserver = net.createServer((socket) => {
     console.log(`Peer connected: ${socket.remoteAddress}:${socket.remotePort}`);
     peers.push(socket);
 
@@ -75,25 +47,65 @@ const startP2PServer = (port) => {
     });
   });
 
-  server.listen(port, () => {
+  p2pserver.listen(port, () => {
     console.log(`P2P server is running on port ${port}`);
     // Notify all connected peers about this server
-    broadcast({ type: 'new_peer', data: { host: 'localhost', port } });
+    broadcast({ type: 'new_peer', data: { host: process.env.DOMAIN ?? 'localhost', port } });
   });
 };
 
 // Function to broadcast a message to all connected peers
 const broadcast = (message) => {
   peers.forEach((peer) => {
+    console.log(peer, message);
     peer.write(JSON.stringify(message));
   });
 };
 
-// Start the P2P server on a specific port
-startP2PServer(p2pPort);
+// Connect to another peer
+const connectToPeer = (peer) => {
+  return new Promise((resolve, reject) => {
+    const client = new net.Socket();
+    client.connect(peer.port, peer.host, () => {
+      console.log(`Connected to peer: ${peer.host}:${peer.port}`);
+      peers.push(client);
+      // Notify the peer about this server
+      client.write(JSON.stringify({ type: 'new_peer', data: { host: process.env.DOMAIN ?? 'localhost', port: p2pPORT } }));
+      resolve();
+    });
+
+    client.on('data', (data) => {
+      console.log(`Received data from peer: ${data}`);
+      // Handle received data
+    });
+
+    client.on('close', () => {
+      console.log(`Connection to peer closed: ${peer.host}:${peer.port}`);
+      const index = peers.indexOf(client);
+      if (index > -1) {
+        peers.splice(index, 1);
+      }
+    });
+
+    client.on('error', (err) => {
+      console.error(`Error connecting to peer: ${err.message}`);
+      reject(err);
+    });
+  });
+};
+
+// Connect to a predefined peer (example)
+const connectToPredefinedPeer = async () => {
+  try {
+    await connectToPeer({ host: 'localhost', port: 6001 });
+    console.log('Connected to predefined peer');
+  } catch (err) {
+    console.error('Failed to connect to predefined peer:', err);
+  }
+};
 
 // Endpoint to create and broadcast a transaction
-app.post('/transaction', async (req, res) => {
+webServer.post('/transaction', async (req, res) => {
   const { senderPublicKey, receiverPublicKey, amount, fee, signature, data } = req.body;
 
   try {
@@ -116,7 +128,7 @@ app.post('/transaction', async (req, res) => {
 });
 
 // Endpoint to get mempool transactions ordered by fee and limited to 10
-app.get('/mempool', async (req, res) => {
+webServer.get('/mempool', async (req, res) => {
   try {
     const mempoolTransactions = await db.getMempoolTransactions();
     res.json(mempoolTransactions);
@@ -127,7 +139,7 @@ app.get('/mempool', async (req, res) => {
 });
 
 // Endpoint to receive mined blocks from clients
-app.post('/mine', async (req, res) => {
+webServer.post('/mine', async (req, res) => {
   try {
     const { block } = req.body;
 
@@ -154,7 +166,7 @@ app.post('/mine', async (req, res) => {
 });
 
 // Endpoint to get the blockchain
-app.get('/blockchain', async (req, res) => {
+webServer.get('/blockchain', async (req, res) => {
   try {
     const blocks = await db.getBlocks();
     res.json(blocks);
@@ -165,6 +177,10 @@ app.get('/blockchain', async (req, res) => {
 });
 
 // Start the server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+webServer.listen(webPORT, () => {
+  console.log(`Web Server is running on port ${webPORT}`);
 });
+
+// Start the P2P server on a specific port
+startP2PServer(p2pPORT);
+// connectToPredefinedPeer();
