@@ -1,4 +1,4 @@
-import { UTXOInterface } from "./utxo";
+import type { UTXOInterface } from "./utxo.ts";
 
 export interface TransactionInterface {
   transactionId: string;

@@ -1,18 +1,14 @@
+import type { UTXOInterface } from "../interfaces/utxo.ts";
+import type { WalletInterface } from "../interfaces/wallet.ts"
 import crypto from "crypto";
-import { UTXOInterface } from "../interfaces/utxo.ts";
-import { WalletInterface } from "../interfaces/wallet.ts"
 import { UTXO } from "./utxo.ts";
-import DatabaseService from "../services/db/db.ts"; 
 
 export class Wallet {
-  db:DatabaseService;
   utxo:UTXO;
   
   constructor(
-    db:DatabaseService,
     utxo:UTXO
   ) {
-    this.db = db;
     this.utxo = utxo;
   }
 
@@ -34,37 +30,38 @@ export class Wallet {
   }
 
   async updateWalletBalance(publicKey: string, amount: number): Promise<void> {
-    try {
-      await this.db.runQuery(
-        "UPDATE wallets SET balance = balance + ? WHERE publicKey = ?",
-        [amount, publicKey]
-      );
-    } catch (err) {
-      throw new Error(`Error updating wallet balance: ${err instanceof Error ? err.message : err}`);
-    }
+    // try {
+    //   await this.db.runQuery(
+    //     "UPDATE wallets SET balance = balance + ? WHERE publicKey = ?",
+    //     [amount, publicKey]
+    //   );
+    // } catch (err) {
+    //   throw new Error(`Error updating wallet balance: ${err instanceof Error ? err.message : err}`);
+    // }
   }
 
   // Check if a wallet exists in the database
   async walletExists(publicKey: string): Promise<boolean> {
-    try {
-      const query = "SELECT COUNT(*) as count FROM wallets WHERE publicKey = ?";
-      const rows = await this.db.runQuery(query, [publicKey]);
-      return rows[0].count > 0; // If count > 0, wallet exists
-    } catch (err) {
-      throw new Error(`Error checking if wallet exists: ${err instanceof Error ? err.message : err}`);
-    }
+    // try {
+    //   const query = "SELECT COUNT(*) as count FROM wallets WHERE publicKey = ?";
+    //   const rows = await this.db.runQuery(query, [publicKey]);
+    //   return rows[0].count > 0; // If count > 0, wallet exists
+    // } catch (err) {
+    //   throw new Error(`Error checking if wallet exists: ${err instanceof Error ? err.message : err}`);
+    // }
+    return true
   }
 
   // Create a new wallet in the database
   async createWallet(publicKey: string, initialBalance: number): Promise<void> {
-    try {
-      await this.db.runQuery(
-        "INSERT INTO wallets (publicKey, balance) VALUES (?, ?)",
-        [publicKey, initialBalance]
-      );
-    } catch (err) {
-      throw new Error(`Error creating wallet: ${err instanceof Error ? err.message : err}`);
-    }
+    // try {
+    //   await this.db.runQuery(
+    //     "INSERT INTO wallets (publicKey, balance) VALUES (?, ?)",
+    //     [publicKey, initialBalance]
+    //   );
+    // } catch (err) {
+    //   throw new Error(`Error creating wallet: ${err instanceof Error ? err.message : err}`);
+    // }
   }
 
   // Calculate the total unspent balance from UTXOs for a given address
@@ -73,8 +70,9 @@ export class Wallet {
     return utxos.reduce((sum, utxo) => sum + utxo.amount, 0);
   }
 
-  checkWallet(){}
-  
+  checkWallet(id: number){
+
+  }
 }
 
 export default Wallet;

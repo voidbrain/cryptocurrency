@@ -1,4 +1,4 @@
-import { announce, DHT_PORT } from './services/dht.ts';
+import { announce } from './services/dht.ts';
 import { startTcpServer, TCP_PORT } from './services/tcpServer.ts';
 import DatabaseService from './services/db/db.ts';
 import { Block } from './models/block.ts';

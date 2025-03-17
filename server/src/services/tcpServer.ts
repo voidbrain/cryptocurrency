@@ -13,8 +13,12 @@ const tcpServer = net.createServer((socket) => {
     socket.write(JSON.stringify(message));
 
     socket.on('data', (data) => {
+      try {
         const clientRequest = JSON.parse(data.toString().trim());
         console.log(`Received data:`, clientRequest)
+      } catch (err) {
+        console.log(err)
+      }
     });
 
     socket.on('end', () => console.log('TCP Peer disconnected'));

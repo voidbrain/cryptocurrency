@@ -1,4 +1,4 @@
-class Block {
+export class Block {
   private blockId: number;
   private blockHash: string;
   private previousBlockHash: string;
@@ -36,4 +36,5 @@ class Block {
   calculateHash() {
     // Logic to calculate the block hash
   }
+  
 }

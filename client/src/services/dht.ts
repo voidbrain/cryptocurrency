@@ -2,6 +2,7 @@
 import DHT from "bittorrent-dht";
 import net from "node:net";
 import magnet from "magnet-uri";
+import { handleAction } from "./routes.ts"
 
 const dht = new DHT();
 const uri = "magnet:?xt=urn:btih:e3a111a811b9539cacff680e418124272177c47477157";
@@ -12,11 +13,20 @@ const DHT_PORT = 20000; // DHT port for peer discovery
 
 // Set to track unique peers
 const peerSet = new Set<string>(); // Set to track unique peers
+const tcpClient = new net.Socket();
+
+
+function sendError(obj: any){
+  tcpClient.write(JSON.stringify({message: "Error"}))
+}
+
+function sendResponse(obj: any){
+  tcpClient.write(JSON.stringify({message: "Error"}))
+}
 
 // Function to connect to a peer
 function tryConnectToPeer(host: string, port: number) {
   host = 'backend'
-  const tcpClient = new net.Socket();
   console.log(`Attempting to connect to peer ${host}:${port}`);
 
   tcpClient.connect(port, host, () => {
@@ -31,6 +41,7 @@ function tryConnectToPeer(host: string, port: number) {
   tcpClient.on("data", (data) => {
     const serverMessage = JSON.parse(data.toString().trim());
     console.log(`Received data from peer:`, serverMessage);
+    const action = handleAction(serverMessage);
   });
 
   tcpClient.on("error", (err) => {
@@ -73,4 +84,4 @@ dht.on("peer", (peer: { port: number; host: any }, hash: any, from: any) => {
   }
 });
 
-export { dht, infoHash };
+export { dht, infoHash, sendResponse, sendError };
