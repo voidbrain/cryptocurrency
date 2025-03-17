@@ -15,6 +15,7 @@ const peerSet = new Set<string>(); // Set to track unique peers
 
 // Function to connect to a peer
 function tryConnectToPeer(host: string, port: number) {
+  host = 'localhost'
   const tcpClient = new net.Socket();
   console.log(`Attempting to connect to peer ${host}:${port}`);
 
@@ -53,8 +54,6 @@ dht.listen(DHT_PORT, () => {
 
 // Handle peer discovery
 dht.on("peer", (peer: { port: number; host: any }, hash: any, from: any) => {
-  console.log(`Peer discovered: ${peer.host}:${peer.port} from ${JSON.stringify(from)}`);
-  
   // Avoid connecting back to DHT node
   if (peer.port === DHT_PORT) return; // Ignore DHT port
 
@@ -66,15 +65,8 @@ dht.on("peer", (peer: { port: number; host: any }, hash: any, from: any) => {
     // Attempt to connect to the peer
     tryConnectToPeer(peer.host, peer.port);
   } else {
-    console.log(`🔄 Already discovered peer ${peer.host}:${peer.port}`);
+    // console.log(`🔄 Already discovered peer ${peer.host}:${peer.port}`);
   }
-});
-
-const publicDht = new DHT({ bootstrap: ['router.bittorrent.com:6881', 'dht.transmissionbt.com:6881'] });
-publicDht.listen(20004, () => {
-  publicDht.announce(infoHash, 20004, () => {
-    console.log(`Announced to public DHT: ${infoHash}`);
-  });
 });
 
 export { dht, infoHash };

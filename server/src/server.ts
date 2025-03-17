@@ -6,7 +6,7 @@ import { Block } from './models/block.ts';
 const db = new DatabaseService();
 
 // Start the DHT server and announce the TCP port
-announce(DHT_PORT);
+announce(TCP_PORT);
 
 // Start the TCP server for DHT messages
 startTcpServer(TCP_PORT);

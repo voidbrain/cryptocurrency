@@ -20,11 +20,4 @@ function announce(port: number) {
     });
 }
 
-const publicDht = new DHT({ bootstrap: ['router.bittorrent.com:6881', 'dht.transmissionbt.com:6881'] });
-publicDht.listen(20003, () => {
-  publicDht.announce(infoHash, 20003, () => {
-    console.log(`Announced to public DHT: ${infoHash}`);
-  });
-});
-
 export { dht, announce, DHT_PORT };
