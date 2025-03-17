@@ -15,18 +15,22 @@ const peerSet = new Set<string>(); // Set to track unique peers
 
 // Function to connect to a peer
 function tryConnectToPeer(host: string, port: number) {
-  host = 'localhost'
+  host = 'backend'
   const tcpClient = new net.Socket();
   console.log(`Attempting to connect to peer ${host}:${port}`);
 
   tcpClient.connect(port, host, () => {
     console.log(`Connected to peer ${host}:${port}`);
-    tcpClient.write("Hello from client!\n");
+    const message = {
+      message: "Hello from client!",
+      action: "hello",
+    }
+    tcpClient.write(JSON.stringify(message));
   });
 
   tcpClient.on("data", (data) => {
-    const serverMessage = data.toString().trim();
-    console.log(`Received data from peer: ${serverMessage}`);
+    const serverMessage = JSON.parse(data.toString().trim());
+    console.log(`Received data from peer:`, serverMessage);
   });
 
   tcpClient.on("error", (err) => {

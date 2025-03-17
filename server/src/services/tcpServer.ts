@@ -6,20 +6,22 @@ const TCP_PORT = 5555; // TCP port for actual communication
 const tcpServer = net.createServer((socket) => {
     console.log('Peer connected:', socket.remoteAddress, socket.remotePort);
 
-    socket.write('Hello from server!\n');
+    const message = {
+      message: "Hello from Server!",
+      action: "hello",
+    }
+    socket.write(JSON.stringify(message));
 
     socket.on('data', (data) => {
-        const clientRequest = data.toString().trim();
-        console.log(`Received data: ${clientRequest}`)
-        // Echo message back
-        // socket.write(`TCP Echo: ${data}`);
+        const clientRequest = JSON.parse(data.toString().trim());
+        console.log(`Received data:`, clientRequest)
     });
 
     socket.on('end', () => console.log('TCP Peer disconnected'));
 });
 
 function startTcpServer(port: number) {
-    tcpServer.listen(port, 'localhost', () => console.log(`DHT Server listening on port ${port}`));
+    tcpServer.listen(port, 'backend', () => console.log(`DHT Server listening on port ${port}`));
 }
 
 export { startTcpServer, TCP_PORT };
