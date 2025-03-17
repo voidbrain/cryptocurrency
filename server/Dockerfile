@@ -15,9 +15,9 @@ COPY . .
 
 # Expose the port the server will run on
 # HTTP port
-EXPOSE 5551
+EXPOSE 5555
 # DHT port
-EXPOSE 20000 
+EXPOSE 20001 
 
 # Command to run the server with --experimental-strip-types
-CMD ["node", "--experimental-strip-types", "src/client.ts"]
+CMD ["node", "--experimental-strip-types", "src/server.ts"]
