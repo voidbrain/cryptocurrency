@@ -2,7 +2,7 @@ import net from 'node:net';
 
 const TCP_PORT = 5555; // TCP port for actual communication
 
-// TCP Server for DHT messages
+// TCP Server for messages
 const tcpServer = net.createServer((socket) => {
     console.log('Peer connected:', socket.remoteAddress, socket.remotePort);
 

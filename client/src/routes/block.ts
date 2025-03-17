@@ -1,4 +1,4 @@
-import type { Blockchain } from "../models/blockchain.ts";
+import { Blockchain } from "../models/blockchain.ts";
 import type { MessageInterface } from "../interfaces/message.ts";
 
 export async function handleBlockAction(
